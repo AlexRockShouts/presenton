@@ -1,0 +1,172 @@
+# Presenton — OpenShift / Kubernetes deployment
+#
+# Security model:
+#   • Runs as UID 1001, GID 0 (root group) — the standard Red Hat "arbitrary UID" pattern.
+#     The Dockerfile already does:  chown -R 1001:0 /app /app_data  +  chmod -R g=u
+#     so any UID injected by the OpenShift namespace range will have write access via group 0.
+#   • allowPrivilegeEscalation: false, all capabilities dropped — compatible with
+#     OpenShift's restricted-v2 SCC out of the box (no custom SCC required).
+#   • fsGroup: 0  ensures the PVC mounted at /app_data is group-owned by GID 0,
+#     making it writable for the container process.
+#
+# Usage:
+#   kubectl apply -f k8s/deployment.yaml          (plain Kubernetes)
+#   oc apply -f k8s/deployment.yaml               (OpenShift)
+#
+# Set your image in the Deployment below, then create a Secret called
+# "presenton-env" with the keys listed in the envFrom section.
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: presenton-data
+  labels:
+    app: presenton
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: presenton
+  labels:
+    app: presenton
+spec:
+  selector:
+    app: presenton
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+
+---
+# OpenShift Route — remove this section if deploying to plain Kubernetes
+# and use an Ingress resource instead.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: presenton
+  labels:
+    app: presenton
+spec:
+  to:
+    kind: Service
+    name: presenton
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: presenton
+  labels:
+    app: presenton
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: presenton
+  template:
+    metadata:
+      labels:
+        app: presenton
+    spec:
+      # ── Pod-level security context ──────────────────────────────────────────
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 0
+        # fsGroup: 0 ensures the mounted PVC is group-owned by GID 0.
+        # The Dockerfile sets chmod g=u on /app_data so GID-0 membership
+        # is sufficient for full read/write access regardless of the
+        # random UID OpenShift may inject.
+        fsGroup: 0
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: presenton
+          # TODO: replace with your actual image reference, e.g.:
+          #   image: quay.io/<org>/presenton:0.7.3-beta
+          image: presenton:latest
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          # ── Container-level security context ─────────────────────────────
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+          # ── Environment ──────────────────────────────────────────────────
+          env:
+            - name: APP_DATA_DIRECTORY
+              value: /app_data
+            - name: TEMP_DIRECTORY
+              value: /tmp/presenton
+            - name: MIGRATE_DATABASE_ON_STARTUP
+              value: "true"
+
+          # Optional: load API keys and other secrets from a Kubernetes Secret.
+          # Create it with:
+          #   kubectl create secret generic presenton-env \
+          #     --from-literal=LLM=anthropic \
+          #     --from-literal=ANTHROPIC_API_KEY=sk-ant-... \
+          #     --from-literal=PEXELS_API_KEY=...
+          # envFrom:
+          #   - secretRef:
+          #       name: presenton-env
+
+          # ── Volume mounts ─────────────────────────────────────────────────
+          volumeMounts:
+            - name: app-data
+              mountPath: /app_data
+
+          # ── Probes ────────────────────────────────────────────────────────
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: presenton-data

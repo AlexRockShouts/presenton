@@ -56,7 +56,18 @@ COPY start.js LICENSE NOTICE ./
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Expose the port
-EXPOSE 80
+EXPOSE 8080
+
+# Setup permissions for rootless execution and OpenShift (Random UID compatibility)
+RUN mkdir -p /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx/conf.d && \
+    chown -R 1001:0 /app /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx && \
+    chmod -R g=u /app /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx
+
+# Set environment variables for Ollama and others to use writable paths
+ENV OLLAMA_MODELS=/app_data/.ollama/models
+ENV HOME=/app_data
+
+USER 1001
 
 # Start the servers
 CMD ["node", "/app/start.js"]

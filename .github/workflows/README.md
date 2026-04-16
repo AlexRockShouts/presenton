@@ -10,6 +10,14 @@ This workflow runs comprehensive tests for all parts of the application:
 - **Electron Next.js** - Lint, build, and Cypress component tests
 - **Docker Build** - Verifies Docker image builds successfully
 
+## Build and Push Docker Image (`docker-build-push.yml`)
+
+This workflow builds the Docker image and pushes it to Docker Hub. It is triggered on pushes to the `main` branch, when a new tag starting with `v` is created, or manually via `workflow_dispatch`.
+
+It requires the following secrets to be configured in the GitHub repository:
+- `DOCKER_USERNAME`: Your Docker Hub username.
+- `DOCKER_PASSWORD`: Your Docker Hub personal access token or password.
+
 ## Testing Locally
 
 Before pushing, you can test everything locally using the provided script:

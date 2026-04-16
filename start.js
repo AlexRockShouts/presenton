@@ -113,6 +113,9 @@ const setupUserConfigFromEnv = () => {
   writeFileSync(userConfigPath, JSON.stringify(userConfig));
 };
 
+let nginxProcess;
+
+// Start servers
 const startServers = async () => {
   const fastApiProcess = spawn(
     "python",
@@ -180,35 +183,39 @@ const startServers = async () => {
     console.error("Ollama process failed to start:", err);
   });
 
-  // Keep the Node process alive until both servers exit
+  // Keep the Node process alive until a core server exits.
+  // Ollama is excluded: it may not be available in all environments (e.g. restricted
+  // OpenShift SCCs, CPU-only nodes) and its failure should not bring down the pod.
   const exitCode = await Promise.race([
     new Promise((resolve) => fastApiProcess.on("exit", resolve)),
     new Promise((resolve) => nextjsProcess.on("exit", resolve)),
-    new Promise((resolve) => ollamaProcess.on("exit", resolve)),
+    new Promise((resolve) => nginxProcess ? nginxProcess.on("exit", resolve) : resolve(0)),
   ]);
 
   console.log(`One of the processes exited. Exit code: ${exitCode}`);
   process.exit(exitCode);
 };
 
-// Start nginx service
+// Start nginx process
 const startNginx = () => {
-  const nginxProcess = spawn("service", ["nginx", "start"], {
+  const process = spawn("nginx", ["-g", "daemon off;"], {
     stdio: "inherit",
     env: process.env,
   });
 
-  nginxProcess.on("error", (err) => {
+  process.on("error", (err) => {
     console.error("Nginx process failed to start:", err);
   });
 
-  nginxProcess.on("exit", (code) => {
+  process.on("exit", (code) => {
     if (code === 0) {
       console.log("Nginx started successfully");
     } else {
       console.error(`Nginx failed to start with exit code: ${code}`);
     }
   });
+
+  return process;
 };
 
 const main = async () => {
@@ -221,7 +228,7 @@ const main = async () => {
   }
 
   startServers();
-  startNginx();
+  nginxProcess = startNginx();
 };
 
 main();

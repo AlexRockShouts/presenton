@@ -21,6 +21,7 @@ from models.sql.presentation_layout_code import PresentationLayoutCodeModel
 from models.sql.template import TemplateModel
 from models.sql.webhook_subscription import WebhookSubscription
 from utils.db_utils import get_database_url_and_connect_args, get_pool_kwargs
+from utils.get_env import get_app_data_directory_env
 
 
 database_url, connect_args = get_database_url_and_connect_args()
@@ -40,8 +41,9 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-# Container DB (Lives inside the container)
-container_db_url = "sqlite+aiosqlite:////app/container.db"
+# Container DB (Lives inside the app data directory for PVC persistence)
+_container_db_dir = get_app_data_directory_env() or "/tmp/presenton"
+container_db_url = f"sqlite+aiosqlite:///{os.path.join(_container_db_dir, 'container.db')}"
 container_db_engine: AsyncEngine = create_async_engine(
     container_db_url, connect_args={"check_same_thread": False}
 )
