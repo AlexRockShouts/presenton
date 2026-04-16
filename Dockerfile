@@ -1,73 +1,61 @@
+# Stage 1: Next.js Builder
+FROM node:20-slim AS next-builder
+WORKDIR /app/servers/nextjs
+COPY servers/nextjs/package.json servers/nextjs/package-lock.json ./
+RUN npm ci
+
+COPY servers/nextjs/ ./
+RUN npm run build && \
+    npm prune --production
+
+# Stage 2: Final Image
 FROM python:3.11-slim-bookworm
 
-# Install Node.js and npm
-RUN apt-get update && apt-get install -y \
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
     curl \
     libreoffice \
     fontconfig \
     chromium \
-    zstd
-
-
-# Install Node.js 20 using NodeSource repository
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs
-
-
-# Create a working directory
-WORKDIR /app  
-
-# Set environment variables
-ENV APP_DATA_DIRECTORY=/app_data
-ENV TEMP_DIRECTORY=/tmp/presenton
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-
-
-# Install ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
-
-# Install dependencies for FastAPI
-RUN pip install alembic aiohttp aiomysql aiosqlite asyncpg fastapi[standard] \
-    pathvalidate pdfplumber chromadb sqlmodel \
-    anthropic google-genai openai fastmcp dirtyjson
-RUN pip install docling --extra-index-url https://download.pytorch.org/whl/cpu
-
-# Install dependencies for Next.js
-WORKDIR /app/servers/nextjs
-COPY servers/nextjs/package.json servers/nextjs/package-lock.json ./
-RUN npm install
-
-
-# Copy Next.js app
-COPY servers/nextjs/ /app/servers/nextjs/
-
-# Build the Next.js app
-WORKDIR /app/servers/nextjs
-RUN npm run build
+    zstd \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && curl -fsSL https://ollama.com/install.sh | sh \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy FastAPI
+# Set environment variables
+ENV APP_DATA_DIRECTORY=/app_data \
+    TEMP_DIRECTORY=/tmp/presenton \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
+    OLLAMA_MODELS=/app_data/.ollama/models \
+    HOME=/app_data
+
+# Install Python dependencies
+# docling is large, we install it with --no-cache-dir to save space
+RUN pip install --no-cache-dir \
+    alembic aiohttp aiomysql aiosqlite asyncpg fastapi[standard] \
+    pathvalidate pdfplumber chromadb sqlmodel \
+    anthropic google-genai openai fastmcp dirtyjson \
+    && pip install --no-cache-dir docling --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Copy Next.js app from builder
+COPY --from=next-builder /app/servers/nextjs /app/servers/nextjs
+
+# Copy FastAPI and other files
 COPY servers/fastapi/ ./servers/fastapi/
 COPY start.js LICENSE NOTICE ./
-
-# Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Expose the port
-EXPOSE 8080
-
-# Setup permissions for rootless execution and OpenShift (Random UID compatibility)
+# Setup permissions for rootless execution and OpenShift
 RUN mkdir -p /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx/conf.d && \
     chown -R 1001:0 /app /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx && \
     chmod -R g=u /app /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx
 
-# Set environment variables for Ollama and others to use writable paths
-ENV OLLAMA_MODELS=/app_data/.ollama/models
-ENV HOME=/app_data
-
+EXPOSE 8080
 USER 1001
 
-# Start the servers
 CMD ["node", "/app/start.js"]

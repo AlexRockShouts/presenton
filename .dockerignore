@@ -1,5 +1,9 @@
 .git
 .gitignore
+.idea
+.vscode
+*.pyc
+__pycache__
 
 servers/fastapi/tmp
 servers/fastapi/debug
@@ -7,5 +11,7 @@ servers/fastapi/.venv
 
 servers/nextjs/node_modules
 servers/nextjs/.next
+servers/nextjs/.next-build
 
 container.db
+.DS_Store

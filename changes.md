@@ -1,5 +1,24 @@
 # Project Changes
 
+### 2026-04-16 - Docker Image Optimization
+
+Reduced the Docker image size and optimized layering for faster builds and smaller deployment footprint.
+
+### Key Changes
+
+- **Dockerfile**
+  - Implemented multi-stage build:
+    - Added a `next-builder` stage to build the Next.js application and prune development dependencies.
+    - Final stage now only contains the necessary runtime files from the build stage.
+  - Consolidated `apt-get` commands into a single layer to reduce intermediate image overhead.
+  - Added `--no-install-recommends` to `apt-get install` to avoid installing unnecessary packages.
+  - Cleaned up `apt` cache (`/var/lib/apt/lists/*`) in the same layer as installation.
+  - Added `--no-cache-dir` to `pip install` commands to prevent saving unnecessary Python package caches.
+  - Optimized layer ordering to cache heavy dependencies (like system packages and Python libraries) before copying frequently changing application code.
+
+- **.dockerignore**
+  - Updated to exclude more unnecessary files like `.idea`, `.vscode`, `__pycache__`, and `.DS_Store`, preventing them from being accidentally included in the Docker build context.
+
 ### 2026-04-16 - GitHub Workflow for Docker Hub
 
 Added a GitHub Actions workflow to automate building and pushing the container image to Docker Hub.
