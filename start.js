@@ -210,16 +210,16 @@ const startServers = async () => {
 
 // Start nginx process
 const startNginx = () => {
-  const process = spawn("nginx", ["-g", "daemon off;"], {
+  const nginxProc = spawn("nginx", ["-g", "daemon off;"], {
     stdio: "inherit",
     env: process.env,
   });
 
-  process.on("error", (err) => {
+  nginxProc.on("error", (err) => {
     console.error("Nginx process failed to start:", err);
   });
 
-  process.on("exit", (code) => {
+  nginxProc.on("exit", (code) => {
     if (code === 0) {
       console.log("Nginx started successfully");
     } else {
@@ -227,7 +227,7 @@ const startNginx = () => {
     }
   });
 
-  return process;
+  return nginxProc;
 };
 
 const main = async () => {

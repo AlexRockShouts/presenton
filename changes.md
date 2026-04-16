@@ -1,14 +1,14 @@
 # Project Changes
 
-### 2026-04-16 - Bug Fix: Container Lifecycle
+### 2026-04-16 - Bug Fixes: Startup Script
 
-Fixed a race condition in `start.js` where the container would exit prematurely with code 0.
+Fixed a critical initialization error and a race condition in `start.js`.
 
 ### Key Changes
 
 - **start.js**
-  - Updated the process exit race logic to correctly wait for `nginxProcess` initialization.
-  - Removed the immediate resolution when `nginxProcess` was undefined during the initialization phase, which previously caused the main Node.js process to terminate with exit code 0.
+  - Resolved `ReferenceError: Cannot access 'process' before initialization` in `startNginx` by renaming the local variable that shadowed the global `process` object.
+  - Updated the process exit race logic to correctly wait for `nginxProcess` initialization, preventing premature container exit with code 0.
 
 ### 2026-04-16 - Docker Image Optimization
 
