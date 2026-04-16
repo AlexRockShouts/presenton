@@ -189,7 +189,19 @@ const startServers = async () => {
   const exitCode = await Promise.race([
     new Promise((resolve) => fastApiProcess.on("exit", resolve)),
     new Promise((resolve) => nextjsProcess.on("exit", resolve)),
-    new Promise((resolve) => nginxProcess ? nginxProcess.on("exit", resolve) : resolve(0)),
+    new Promise((resolve) =>
+      nginxProcess
+        ? nginxProcess.on("exit", resolve)
+        : // If Nginx is not yet started, wait until it is
+          new Promise((resolveNginx) => {
+            const checkNginx = setInterval(() => {
+              if (nginxProcess) {
+                clearInterval(checkNginx);
+                nginxProcess.on("exit", resolveNginx);
+              }
+            }, 100);
+          })
+    ),
   ]);
 
   console.log(`One of the processes exited. Exit code: ${exitCode}`);
