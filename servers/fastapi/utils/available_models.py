@@ -14,7 +14,7 @@ def _get_httpx_client() -> httpx.AsyncClient:
     verify = parse_bool_or_none(get_verify_ssl_env())
     if verify is None:
         verify = get_verify_ssl_env() or True
-    return httpx.AsyncClient(verify=verify)
+    return httpx.AsyncClient(verify=verify, timeout=httpx.Timeout(connect=90.0, read=90.0))
 
 
 async def list_available_openai_compatible_models(url: str, api_key: str) -> list[str]:

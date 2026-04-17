@@ -130,7 +130,7 @@ async def check_google_font_availability(font_name: str) -> bool:
         async with aiohttp.ClientSession() as session:
             async with session.head(
                 get_google_font_css_url(font_name),
-                timeout=aiohttp.ClientTimeout(total=10),
+                timeout=aiohttp.ClientTimeout(total=90),
             ) as response:
                 return response.status == 200
     except Exception:

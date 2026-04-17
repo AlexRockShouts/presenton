@@ -1,3 +1,19 @@
+### 2026-04-18 - Increased All HTTP Timeouts to 90 Seconds
+
+Increased all HTTP client timeouts (httpx, aiohttp, uvicorn) to 90 seconds to handle slower networks/connections reliably.
+
+#### Key Changes
+- **scripts/patch_chromadb.py**: httpx.Timeout(connect=90, read=90, write=90, pool=90).
+- **services/image_generation_service.py** (main/electron): All aiohttp.ClientTimeout(total=90), ComfyUI `timeout: int = 90`.
+- **electron/servers/fastapi/templates/font_utils.py**, **servers/fastapi/api/v1/ppt/endpoints/pptx_slides.py**: total=90.
+- **services/llm_client.py**, **utils/available_models.py** (main/electron): httpx.AsyncClient with `timeout=httpx.Timeout(connect=90.0, read=90.0)`.
+- **mcp_server.py** (main/electron): httpx.AsyncClient `timeout=90.0`.
+- **server.py** (main/electron): uvicorn.run `timeout_keep_alive=90`.
+
+#### Verification
+- Linting clean across all files.
+- No behavioral changes for fast requests; resilient to slow responses up to 90s.
+
 ### 2026-04-18 - Fixed Puppeteer ERR_CONNECTION_REFUSED in PPTX/PDF Exports
 
 Fixed `net::ERR_CONNECTION_REFUSED` during PPTX/PDF exports: Puppeteer navigated to `http://localhost/pdf-maker` (port 80, refused) instead of Next.js on port 3000.

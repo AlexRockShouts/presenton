@@ -252,7 +252,7 @@ class ImageGenerationService:
                 "https://api.pexels.com/v1/search",
                 params={"query": prompt, "per_page": per_page},
                 headers={"Authorization": resolved_api_key} if resolved_api_key else {},
-                timeout=aiohttp.ClientTimeout(total=20),
+                timeout=aiohttp.ClientTimeout(total=90),
             )
 
             if response.status in {401, 403}:
@@ -291,7 +291,7 @@ class ImageGenerationService:
                     "image_type": "photo",
                     "per_page": per_page,
                 },
-                timeout=aiohttp.ClientTimeout(total=20),
+                timeout=aiohttp.ClientTimeout(total=90),
             )
 
             if response.status in {401, 403}:
@@ -481,7 +481,7 @@ class ImageGenerationService:
         response = await session.post(
             f"{comfyui_url}/prompt",
             json=payload,
-            timeout=aiohttp.ClientTimeout(total=30),
+            timeout=aiohttp.ClientTimeout(total=90),
         )
 
         if response.status != 200:
@@ -502,7 +502,7 @@ class ImageGenerationService:
         session: aiohttp.ClientSession,
         comfyui_url: str,
         prompt_id: str,
-        timeout: int = 300,
+        timeout: int = 90,
         poll_interval: int = 4,
     ) -> dict:
         """Poll ComfyUI history endpoint until workflow completes."""
@@ -580,7 +580,7 @@ class ImageGenerationService:
                     response = await session.get(
                         f"{comfyui_url}/view",
                         params=params,
-                        timeout=aiohttp.ClientTimeout(total=60),
+                        timeout=aiohttp.ClientTimeout(total=90),
                     )
 
                     if response.status == 200:

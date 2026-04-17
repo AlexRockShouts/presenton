@@ -195,7 +195,7 @@ class ImageGenerationService:
                 f"{base_url}/images/generations",
                 json=payload,
                 headers=headers,
-                timeout=aiohttp.ClientTimeout(total=300),
+                timeout=aiohttp.ClientTimeout(total=90),
             )
 
             if resp.status != 200:
@@ -234,7 +234,7 @@ class ImageGenerationService:
                 dl_resp = await session.get(
                     image_url,
                     headers=dl_headers,
-                    timeout=aiohttp.ClientTimeout(total=120),
+                    timeout=aiohttp.ClientTimeout(total=90),
                 )
                 if dl_resp.status != 200:
                     raise Exception(
@@ -458,7 +458,7 @@ class ImageGenerationService:
         response = await session.post(
             f"{comfyui_url}/prompt",
             json=payload,
-            timeout=aiohttp.ClientTimeout(total=30),
+            timeout=aiohttp.ClientTimeout(total=90),
         )
 
         if response.status != 200:
@@ -479,7 +479,7 @@ class ImageGenerationService:
         session: aiohttp.ClientSession,
         comfyui_url: str,
         prompt_id: str,
-        timeout: int = 300,
+        timeout: int = 90,
         poll_interval: int = 4,
     ) -> dict:
         """Poll ComfyUI history endpoint until workflow completes."""
@@ -557,7 +557,7 @@ class ImageGenerationService:
                     response = await session.get(
                         f"{comfyui_url}/view",
                         params=params,
-                        timeout=aiohttp.ClientTimeout(total=60),
+                        timeout=aiohttp.ClientTimeout(total=90),
                     )
 
                     if response.status == 200:

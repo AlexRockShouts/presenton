@@ -24,4 +24,5 @@ if __name__ == "__main__":
         port=args.port,
         log_level="info",
         reload=reload,
+        timeout_keep_alive=90,
     )

@@ -10,7 +10,7 @@ with open(file_path, "r") as f:
 
 # 1. Increase timeouts
 timeout_pattern = r'with httpx\.stream\("GET", url\) as resp:'
-timeout_replacement = 'timeout = httpx.Timeout(60.0, connect=60.0, read=120.0, write=60.0, pool=60.0)\n        with httpx.stream("GET", url, timeout=timeout) as resp:'
+timeout_replacement = 'timeout = httpx.Timeout(90.0, connect=90.0, read=90.0, write=90.0, pool=90.0)\n        with httpx.stream("GET", url, timeout=timeout) as resp:'
 
 if timeout_pattern in content:
     content = content.replace('with httpx.stream("GET", url) as resp:', timeout_replacement)

@@ -422,6 +422,9 @@ async def update_presentation(
 async def export_presentation_as_pptx(
     pptx_model: Annotated[PptxPresentationModel, Body()],
 ):
+    if not pptx_model.slides:
+        raise HTTPException(status_code=422, detail="Presentation slides not found. Please wait for the presentation generation to complete before exporting.")
+
     temp_dir = TEMP_FILE_SERVICE.create_temp_dir()
 
     pptx_creator = PptxPresentationCreator(pptx_model, temp_dir)

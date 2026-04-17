@@ -233,7 +233,7 @@ async def check_google_font_availability(font_name: str) -> bool:
 
         async with aiohttp.ClientSession() as session:
             async with session.head(
-                url, timeout=aiohttp.ClientTimeout(total=10)
+                url, timeout=aiohttp.ClientTimeout(total=90)
             ) as response:
                 return response.status == 200
 
