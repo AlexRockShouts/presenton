@@ -1,5 +1,17 @@
 # Project Changes
 
+### 2026-04-17 - Removed Mixpanel Tracking
+
+Removed all Mixpanel analytics and telemetry tracking for enhanced privacy compliance.
+
+#### Key Changes
+- Deleted `servers/nextjs/utils/mixpanel.ts` and `electron/servers/nextjs/utils/mixpanel.ts`.
+- Deleted `servers/nextjs/app/MixpanelInitializer.tsx` and `electron/servers/nextjs/app/MixpanelInitializer.tsx`.
+- Removed `mixpanel-browser` dependency from both Next.js `package.json` files.
+- Removed MixpanelInitializer imports and wrappers from both `app/layout.tsx` files.
+- Deleted `/api/telemetry-status/route.ts` API routes in both Next.js directories (used exclusively for telemetry toggle).
+- **Remaining:** Direct `trackEvent` calls in ~30 UI components reference the deleted module. These will cause TypeScript errors on build; recommend bulk removal of import lines and `trackEvent` calls for clean compilation.
+
 ### 2026-04-17 - Robust Structured Output Generation
 
 Fixed application crashes caused by non-standard or empty LLM provider responses during structured output generation (e.g., when generating presentation structure).
