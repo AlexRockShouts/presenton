@@ -1,5 +1,18 @@
 # Project Changes
 
+### 2026-04-17 - Robust Structured Output Generation
+
+Fixed application crashes caused by non-standard or empty LLM provider responses during structured output generation (e.g., when generating presentation structure).
+
+### Key Changes
+
+- **services/llm_client.py**
+  - Added a `try...except` block around `dirtyjson.loads()` to gracefully handle malformed or empty JSON strings.
+  - Implemented detailed debug logging to capture raw LLM responses when parsing fails, facilitating troubleshooting of custom API gateways.
+  - Added warning logs for empty content responses, ensuring they are caught before triggering parsing errors.
+  - Returns `None` instead of crashing on invalid output, allowing the application's built-in retry logic (3 attempts) to handle transient errors.
+  - Applied identical fixes to the Electron-specific backend (`electron/servers/fastapi/services/llm_client.py`).
+
 ### 2026-04-17 - Full Transition to Structured Logging
 
 Completed the transition from basic `print` statements to a unified structured logging system across the entire FastAPI service and its Electron-specific components.

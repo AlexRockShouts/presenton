@@ -862,8 +862,17 @@ class LLMClient:
                 )
         if content:
             if depth == 0:
-                return dict(dirtyjson.loads(content))
+                try:
+                    return dict(dirtyjson.loads(content))
+                except Exception as e:
+                    logger.error(f"Failed to parse structured output: {e}")
+                    logger.debug(f"Raw content: {content}")
+                    return None
             return content
+        else:
+            logger.warning(
+                f"LLM returned empty content for model {model}. Response: {response}"
+            )
         return None
 
     async def _generate_codex_structured(
@@ -905,7 +914,12 @@ class LLMClient:
         # At the root level we parse into a dict; recursive calls just
         # propagate the raw JSON/text, mirroring other providers.
         if depth == 0:
-            return dict(dirtyjson.loads(raw))
+            try:
+                return dict(dirtyjson.loads(raw))
+            except Exception as e:
+                logger.error(f"Failed to parse structured output for Codex: {e}")
+                logger.debug(f"Raw Codex content: {raw}")
+                return None
         return {"raw": raw}
 
     async def _generate_google_structured(
