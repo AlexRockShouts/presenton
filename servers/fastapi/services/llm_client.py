@@ -39,6 +39,7 @@ from models.llm_tool_call import (
     OpenAIToolCallFunction,
 )
 from models.llm_tools import LLMDynamicTool, LLMTool
+import httpx
 from services.llm_tool_calls_handler import LLMToolCallsHandler
 from utils.async_iterator import iterator_to_async
 from utils.dummy_functions import do_nothing_async
@@ -55,6 +56,7 @@ from utils.get_env import (
     get_ollama_url_env,
     get_openai_api_key_env,
     get_tool_calls_env,
+    get_verify_ssl_env,
     get_web_grounding_env,
 )
 from utils.set_env import (
@@ -100,6 +102,12 @@ class LLMClient:
     def disable_thinking(self) -> bool:
         return parse_bool_or_none(get_disable_thinking_env()) or False
 
+    def _get_httpx_client(self) -> httpx.AsyncClient:
+        verify = parse_bool_or_none(get_verify_ssl_env())
+        if verify is None:
+            verify = get_verify_ssl_env() or True
+        return httpx.AsyncClient(verify=verify)
+
     # ? Clients
     def _get_client(self):
         match self.llm_provider:
@@ -127,7 +135,7 @@ class LLMClient:
                 status_code=400,
                 detail="OpenAI API Key is not set",
             )
-        return AsyncOpenAI()
+        return AsyncOpenAI(http_client=self._get_httpx_client())
 
     def _get_google_client(self):
         if not get_google_api_key_env():
@@ -143,12 +151,13 @@ class LLMClient:
                 status_code=400,
                 detail="Anthropic API Key is not set",
             )
-        return AsyncAnthropic()
+        return AsyncAnthropic(http_client=self._get_httpx_client())
 
     def _get_ollama_client(self):
         return AsyncOpenAI(
             base_url=(get_ollama_url_env() or "http://localhost:11434") + "/v1",
             api_key="ollama",
+            http_client=self._get_httpx_client(),
         )
 
     def _get_custom_client(self):
@@ -160,6 +169,7 @@ class LLMClient:
         return AsyncOpenAI(
             base_url=get_custom_llm_url_env(),
             api_key=get_custom_llm_api_key_env() or "null",
+            http_client=self._get_httpx_client(),
         )
 
     def _get_codex_headers(self) -> dict:
@@ -228,6 +238,7 @@ class LLMClient:
             api_key=access_token or "codex",
             default_headers=default_headers,
             timeout=120.0,
+            http_client=self._get_httpx_client(),
         )
 
     # ? Prompts

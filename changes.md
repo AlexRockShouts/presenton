@@ -1,5 +1,33 @@
 # Project Changes
 
+### 2026-04-17 - SSL Verification & Proxy Support
+
+Fixed application startup failures in Kubernetes/OpenShift environments caused by SSL certificate verification errors when connecting to LLM providers.
+
+### Key Changes
+
+- **Environment Configuration**
+  - Introduced `VERIFY_SSL` environment variable to toggle SSL verification (defaulting to `true`).
+  - Supports setting `VERIFY_SSL` to a custom CA bundle path or `false` to bypass verification.
+- **LLM & Image Generation Clients**
+  - Updated `AsyncOpenAI`, `AsyncAnthropic`, and `aiohttp` clients to respect the `VERIFY_SSL` setting.
+  - Centralized client initialization in `llm_client.py` and `image_generation_service.py` using a shared `httpx.AsyncClient`.
+  - Applied SSL verification logic to model availability checks during startup.
+
+### 2026-04-17 - ChromaDB: Fixed Pre-downloaded Model Discovery
+
+Fixed a persistent `ConnectTimeout` issue by ensuring ChromaDB correctly finds the pre-downloaded embedding model and avoids redundant network requests.
+
+### Key Changes
+
+- **services/icon_finder_service.py**
+  - Removed a hardcoded `DOWNLOAD_PATH` override that was forcing ChromaDB to ignore the pre-downloaded model path.
+  - Relocated ChromaDB persistent storage to the writable `APP_DATA_DIRECTORY` to support rootless environments.
+- **scripts/patch_chromadb.py**
+  - Automatically modifies the installed `chromadb` package to increase HTTP timeouts and set a fixed model download path to `/usr/share/chroma_models`.
+- **chromadb/utils/embedding_functions/onnx_mini_lm_l6_v2.py (Patched)**
+  - Increased connection timeout to 60s and read timeout to 120s (from default 5s).
+
 ### 2026-04-17 - Robust Model Pre-downloading (Fix)
 
 Fixed a bug in the `Dockerfile` where the `download_model.py` script was being executed before it was copied into the image.

@@ -170,3 +170,7 @@ def get_sentry_traces_sample_rate_env():
 
 def get_sentry_send_default_pii_env():
     return os.getenv("SENTRY_SEND_DEFAULT_PII")
+
+
+def get_verify_ssl_env():
+    return os.getenv("VERIFY_SSL")

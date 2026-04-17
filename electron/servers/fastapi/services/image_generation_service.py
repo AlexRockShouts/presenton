@@ -4,6 +4,7 @@ import json
 import os
 import aiohttp
 from fastapi import HTTPException
+import httpx
 from google import genai
 from google.genai import types
 from openai import NOT_GIVEN, AsyncOpenAI
@@ -14,7 +15,9 @@ from utils.get_env import (
     get_gpt_image_1_5_quality_env,
     get_next_public_fast_api_env,
     get_pexels_api_key_env,
+    get_verify_ssl_env,
 )
+from utils.parsers import parse_bool_or_none
 from utils.get_env import get_pixabay_api_key_env
 from utils.get_env import get_comfyui_url_env
 from utils.get_env import get_comfyui_workflow_env
@@ -36,6 +39,12 @@ class ImageGenerationService:
         self.output_directory = output_directory
         self.is_image_generation_disabled = is_image_generation_disabled()
         self.image_gen_func = self.get_image_gen_func()
+
+    def _get_httpx_client(self) -> httpx.AsyncClient:
+        verify = parse_bool_or_none(get_verify_ssl_env())
+        if verify is None:
+            verify = get_verify_ssl_env() or True
+        return httpx.AsyncClient(verify=verify)
 
     def get_image_gen_func(self):
         if self.is_image_generation_disabled:
@@ -124,7 +133,7 @@ class ImageGenerationService:
     async def generate_image_openai(
         self, prompt: str, output_directory: str, model: str, quality: str
     ) -> str:
-        client = AsyncOpenAI()
+        client = AsyncOpenAI(http_client=self._get_httpx_client())
         result = await client.images.generate(
             model=model,
             prompt=prompt,

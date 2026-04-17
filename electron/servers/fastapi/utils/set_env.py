@@ -136,3 +136,7 @@ def set_codex_is_pro_env(value: str):
 
 def set_codex_model_env(value: str):
     os.environ["CODEX_MODEL"] = value
+
+
+def set_verify_ssl_env(value: str):
+    os.environ["VERIFY_SSL"] = value

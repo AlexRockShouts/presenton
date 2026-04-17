@@ -3,6 +3,7 @@ import base64
 import json
 import os
 import aiohttp
+import httpx
 from fastapi import HTTPException
 from google import genai
 from openai import NOT_GIVEN, AsyncOpenAI
@@ -14,7 +15,9 @@ from utils.get_env import (
     get_pexels_api_key_env,
     get_open_webui_image_url_env,
     get_open_webui_image_api_key_env,
+    get_verify_ssl_env,
 )
+from utils.parsers import parse_bool_or_none
 from utils.get_env import get_pixabay_api_key_env
 from utils.get_env import get_comfyui_url_env
 from utils.get_env import get_comfyui_workflow_env
@@ -37,6 +40,12 @@ class ImageGenerationService:
         self.output_directory = output_directory
         self.is_image_generation_disabled = is_image_generation_disabled()
         self.image_gen_func = self.get_image_gen_func()
+
+    def _get_httpx_client(self) -> httpx.AsyncClient:
+        verify = parse_bool_or_none(get_verify_ssl_env())
+        if verify is None:
+            verify = get_verify_ssl_env() or True
+        return httpx.AsyncClient(verify=verify)
 
     def get_image_gen_func(self):
         if self.is_image_generation_disabled:
@@ -112,7 +121,7 @@ class ImageGenerationService:
     async def generate_image_openai(
         self, prompt: str, output_directory: str, model: str, quality: str
     ) -> str:
-        client = AsyncOpenAI()
+        client = AsyncOpenAI(http_client=self._get_httpx_client())
         result = await client.images.generate(
             model=model,
             prompt=prompt,
@@ -171,7 +180,13 @@ class ImageGenerationService:
             "size": "1024x1024",
         }
 
-        async with aiohttp.ClientSession(trust_env=True) as session:
+        verify_ssl = parse_bool_or_none(get_verify_ssl_env())
+        if verify_ssl is None:
+            verify_ssl = get_verify_ssl_env() or True
+
+        async with aiohttp.ClientSession(
+            trust_env=True, connector=aiohttp.TCPConnector(ssl=verify_ssl)
+        ) as session:
             resp = await session.post(
                 f"{base_url}/images/generations",
                 json=payload,
