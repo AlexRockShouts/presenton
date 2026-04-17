@@ -43,8 +43,11 @@ RUN pip install --no-cache-dir \
     && pip install --no-cache-dir docling --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Pre-download the ONNXMiniLM_L6_V2 model for chromadb
-COPY scripts/download_model.py ./scripts/
-RUN python3 scripts/download_model.py
+COPY scripts/patch_chromadb.py scripts/download_model.py ./scripts/
+RUN mkdir -p /usr/share/chroma_models && \
+    chown -R 1001:0 /usr/share/chroma_models && \
+    python3 scripts/patch_chromadb.py && \
+    python3 scripts/download_model.py
 
 # Copy Next.js app from builder
 COPY --from=next-builder /app/servers/nextjs /app/servers/nextjs
