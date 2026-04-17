@@ -15,6 +15,25 @@
   <a href="https://presenton.ai/"><img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat" alt="Platform" /></a>
 </p>
 
+## Rootless Red Hat OpenShift Fork
+
+This fork enables **rootless** deployment on **Red Hat OpenShift** and Kubernetes environments.
+
+### Key Changes:
+- **ChromaDB Fixes**: Pre-downloaded ONNX embedding models baked into Docker image (`/usr/share/chroma_models`), increased HTTP timeouts to 90s, patched library for rootless persistence.
+- **SSL & Proxy Support**: `VERIFY_SSL=false` env var bypasses self-signed certs for corporate gateways (e.g., RHOAI).
+- **Observability**: `LOG_LEVEL` (DEBUG/INFO), structured startup/service logs in `start.js` and FastAPI lifespan, health endpoints (`/api/v1/health`).
+- **Privacy & Cleanup**: Removed Mixpanel tracking entirely.
+- **Reliability**: Lazy service init (IconFinderService), robust model validation skips for custom LLMs, fixed PPTX/PDF exports (`localhost:3000` puppeteer).
+- **Timeouts**: All httpx/aiohttp/uvicorn clients set to 90s.
+- **Startup Resilience**: Fallbacks for env vars, error-wrapped lifespan checks.
+
+### Kubernetes Manifests:
+- **`k8s/deployment.yaml`**: `runAsNonRoot: true`, security contexts, resources (CPU 250m-6C, Mem 512Mi-10Gi), env vars (custom LLM URL/API key, Pexels, `APP_DATA_DIRECTORY`), PVC `presenton-app-data`.
+- Supports custom models like `mistralai/Mistral-Small-4-119B-2603` on RHOAI gateways.
+
+Full changelog: [changes.md](changes.md)
+
 # Open-Source AI Presentation Generator and API (Gamma, Beautiful AI, Decktopus Alternative)
 
 ### ✨ Why Presenton
