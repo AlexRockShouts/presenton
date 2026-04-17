@@ -21,7 +21,7 @@ Removed all Mixpanel analytics and telemetry tracking for enhanced privacy compl
 - Removed `mixpanel-browser` dependency from both Next.js `package.json` files.
 - Removed MixpanelInitializer imports and wrappers from both `app/layout.tsx` files.
 - Deleted `/api/telemetry-status/route.ts` API routes in both Next.js directories (used exclusively for telemetry toggle).
-- **Remaining:** Direct `trackEvent` calls in ~30 UI components reference the deleted module. These will cause TypeScript errors on build; recommend bulk removal of import lines and `trackEvent` calls for clean compilation.
+- Added no-op stub `utils/mixpanel.ts` files in both Next.js codebases to satisfy remaining `trackEvent` imports/calls and enable clean builds without further edits.
 
 ### 2026-04-17 - Robust Structured Output Generation
 
