@@ -1,5 +1,26 @@
 # Project Changes
 
+### 2026-04-17 - Robust Model Pre-downloading
+
+Improved the reliability of the embedding model pre-downloading process in the Docker image by using a dedicated Python script with retry logic and exponential backoff.
+
+### Key Changes
+
+- **scripts/download_model.py**
+  - Created a new script to download the `ONNXMiniLM_L6_V2` model with automatic retries (up to 5 attempts) and exponential backoff.
+- **Dockerfile**
+  - Updated to use the new `download_model.py` script instead of a single-line command, making the build process more resilient to transient network issues during model fetching.
+
+### 2026-04-17 - Docker Image: Pre-downloaded Embeddings
+
+Pre-downloaded the `ONNXMiniLM_L6_V2` embedding model in the Docker image to improve startup performance and allow for offline execution.
+
+### Key Changes
+
+- **Dockerfile**
+  - Added a `RUN` command to pre-download the `ONNXMiniLM_L6_V2` embedding model during the build phase.
+  - Positioned the download after dependency installation but before permission setup to ensure the model is cached in the persistent `/app_data` directory.
+
 ### 2026-04-17 - Permissions Refinement
 
 Improved Dockerfile permissions to ensure smoother execution of LibreOffice, Chromium, and Ollama in restricted rootless environments.
