@@ -1,6 +1,6 @@
 import asyncio
 import base64
-import json
+import logging
 import os
 import aiohttp
 import httpx
@@ -33,6 +33,9 @@ from utils.image_provider import (
     is_open_webui_selected,
 )
 import uuid
+
+
+logger = logging.getLogger(__name__)
 
 
 class ImageGenerationService:
@@ -80,18 +83,19 @@ class ImageGenerationService:
         otherwise it uses the full image prompt with theme.
         - Output Directory is used for saving the generated image not the stock provider.
         """
+        logger.info(f"Generating image (prompt: {prompt.prompt[:50]}...)")
         if self.is_image_generation_disabled:
-            print("Image generation is disabled. Using placeholder image.")
+            logger.info("Image generation is disabled. Using placeholder image.")
             return "/static/images/placeholder.jpg"
 
         if not self.image_gen_func:
-            print("No image generation function found. Using placeholder image.")
+            logger.warning("No image generation function found. Using placeholder image.")
             return "/static/images/placeholder.jpg"
 
         image_prompt = prompt.get_image_prompt(
             with_theme=not self.is_stock_provider_selected()
         )
-        print(f"Request - Generating Image for {image_prompt}")
+        logger.debug(f"Request - Generating Image for {image_prompt}")
 
         try:
             if self.is_stock_provider_selected():
@@ -115,7 +119,7 @@ class ImageGenerationService:
             raise Exception(f"Image not found at {image_path}")
 
         except Exception as e:
-            print(f"Error generating image: {e}")
+            logger.error(f"Error generating image: {e}")
             return "/static/images/placeholder.jpg"
 
     async def generate_image_openai(

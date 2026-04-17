@@ -155,3 +155,7 @@ def get_open_webui_image_api_key_env():
 
 def get_verify_ssl_env():
     return os.getenv("VERIFY_SSL")
+
+
+def get_log_level_env():
+    return os.getenv("LOG_LEVEL", "info")

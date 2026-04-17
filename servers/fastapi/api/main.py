@@ -1,3 +1,5 @@
+import logging
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.lifespan import app_lifespan
@@ -5,7 +7,17 @@ from api.middlewares import UserConfigEnvUpdateMiddleware
 from api.v1.ppt.router import API_V1_PPT_ROUTER
 from api.v1.webhook.router import API_V1_WEBHOOK_ROUTER
 from api.v1.mock.router import API_V1_MOCK_ROUTER
+from utils.get_env import get_log_level_env
 
+# Configure logging
+log_level_str = get_log_level_env().upper()
+log_level = getattr(logging, log_level_str, logging.INFO)
+logging.basicConfig(
+    level=log_level,
+    format="%(levelname)s:     %(message)s",
+    stream=sys.stdout,
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(lifespan=app_lifespan)
 
@@ -14,6 +26,11 @@ app = FastAPI(lifespan=app_lifespan)
 app.include_router(API_V1_PPT_ROUTER)
 app.include_router(API_V1_WEBHOOK_ROUTER)
 app.include_router(API_V1_MOCK_ROUTER)
+
+
+@app.get("/api/v1/health")
+async def health_check():
+    return {"status": "healthy"}
 
 # Middlewares
 origins = ["*"]

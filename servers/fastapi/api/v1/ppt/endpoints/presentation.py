@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 import json
+import logging
 import math
 import os
 import random
@@ -69,6 +70,7 @@ import uuid
 
 
 PRESENTATION_ROUTER = APIRouter(prefix="/presentation", tags=["Presentation"])
+logger = logging.getLogger(__name__)
 
 
 @PRESENTATION_ROUTER.get("/all", response_model=List[PresentationWithSlides])
@@ -168,6 +170,8 @@ async def create_presentation(
     sql_session.add(presentation)
     await sql_session.commit()
 
+    logger.info(f"Presentation created with ID: {presentation_id}")
+
     return presentation
 
 
@@ -254,6 +258,8 @@ async def prepare_presentation(
     presentation.set_structure(presentation_structure)
     await sql_session.commit()
 
+    logger.info(f"Presentation prepared: {presentation_id}")
+
     return presentation
 
 
@@ -277,6 +283,8 @@ async def stream_presentation(
 
     image_generation_service = ImageGenerationService(get_images_directory())
 
+    logger.info(f"Streaming presentation: {id}")
+
     async def inner():
         structure = presentation.get_structure()
         layout = presentation.get_layout()
@@ -292,6 +300,7 @@ async def stream_presentation(
         ).to_string()
         for i, slide_layout_index in enumerate(structure.slides):
             slide_layout = layout.slides[slide_layout_index]
+            logger.debug(f"Generating slide {i} for presentation {id}")
 
             try:
                 slide_content = await get_slide_content_from_type_and_outline(

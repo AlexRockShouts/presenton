@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import List, Tuple
 from models.image_prompt import ImagePrompt
 from models.sql.image_asset import ImageAsset
@@ -9,11 +10,15 @@ from utils.asset_directory_utils import get_images_directory
 from utils.dict_utils import get_dict_at_path, get_dict_paths_with_key, set_dict_at_path
 
 
+logger = logging.getLogger(__name__)
+
+
 async def process_slide_and_fetch_assets(
     image_generation_service: ImageGenerationService,
     slide: SlideModel,
 ) -> List[ImageAsset]:
 
+    logger.debug(f"Processing slide {slide.id} assets")
     async_tasks = []
 
     image_paths = get_dict_paths_with_key(slide.content, "__image_prompt__")

@@ -1,10 +1,14 @@
 import asyncio
 import json
+import logging
 import os
 import chromadb
 from chromadb.config import Settings
 from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
 from utils.get_env import get_app_data_directory_env
+
+
+logger = logging.getLogger(__name__)
 
 
 class IconFinderService:
@@ -15,9 +19,9 @@ class IconFinderService:
         self.client = chromadb.PersistentClient(
             path=chroma_db_dir, settings=Settings(anonymized_telemetry=False)
         )
-        print("Initializing icons collection...")
+        logger.info("Initializing icons collection...")
         self._initialize_icons_collection()
-        print("Icons collection initialized.")
+        logger.info("Icons collection initialized.")
 
     def _initialize_icons_collection(self):
         self.embedding_function = ONNXMiniLM_L6_V2()
@@ -50,6 +54,7 @@ class IconFinderService:
                 self.collection.add(documents=documents, ids=ids)
 
     async def search_icons(self, query: str, k: int = 1):
+        logger.debug(f"Searching icons for query: {query}")
         result = await asyncio.to_thread(
             self.collection.query,
             query_texts=[query],

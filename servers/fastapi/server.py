@@ -1,5 +1,6 @@
 import uvicorn
 import argparse
+from utils.get_env import get_log_level_env
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the FastAPI server")
@@ -11,11 +12,12 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     reload = args.reload == "true"
+    log_level = get_log_level_env().lower()
     
     uvicorn.run(
         "api.main:app",
         host="127.0.0.1",
         port=args.port,
-        log_level="info",
+        log_level=log_level,
         reload=reload,
     )

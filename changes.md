@@ -1,5 +1,38 @@
 # Project Changes
 
+### 2026-04-17 - Improved Debug Logging & Observability
+
+Enhanced the observability of the FastAPI service by implementing a configurable logging system and replacing basic `print` statements with structured logs.
+
+### Key Changes
+
+- **Service-Level Observability**
+  - Added detailed logging to `LLMClient` to track provider usage, model selection, and request status.
+  - Implemented progress and lifecycle logging in the presentation generation and streaming endpoints.
+  - Enhanced asset generation visibility by logging image generation and icon search requests.
+  - Replaced legacy `print` statements in `IconFinderService` and `ImageGenerationService` with structured logs.
+- **Configurable Log Levels**
+  - Introduced the `LOG_LEVEL` environment variable (default: `info`) to control application verbosity.
+  - Aligned Uvicorn server logs with the application's configured log level.
+- **Structured Application Logging**
+  - Configured standard Python `logging` in `api/main.py` with consistent formatting.
+  - Replaced all startup-related `print` statements with `logger.info`, `logger.debug`, and `logger.error` calls.
+- **Enhanced Startup Traceability**
+  - Added detailed logs for database migrations, table creation, and LLM/Image Provider validation.
+  - Improved visibility into model discovery and connectivity checks during the application lifespan.
+
+### 2026-04-17 - Kubernetes: Fixed 502 Bad Gateway & Startup Failures
+
+Fixed application startup and connectivity issues in Kubernetes/OpenShift environments caused by missing health endpoints, PVC name mismatches, and incorrect LLM API configurations.
+
+### Key Changes
+
+- **Health & Probes**
+  - Added `/api/v1/health` endpoint to the FastAPI application to satisfy Kubernetes readiness and liveness probes.
+  - Aligned probe paths in `k8s/deployment.yaml` with the new endpoint.
+- **Environment & Persistence**
+  - Added fallback logic in `app_lifespan` to ensure the application data directory is correctly initialized even if `APP_DATA_DIRECTORY` is not explicitly set.
+
 ### 2026-04-17 - SSL Verification & Proxy Support
 
 Fixed application startup failures in Kubernetes/OpenShift environments caused by SSL certificate verification errors when connecting to LLM providers.

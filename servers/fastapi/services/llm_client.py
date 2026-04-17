@@ -1,6 +1,7 @@
 import asyncio
 import dirtyjson
 import json
+import logging
 from typing import AsyncGenerator, List, Optional, Dict, Any
 from fastapi import HTTPException
 from openai import APIStatusError, AsyncOpenAI, OpenAIError
@@ -74,6 +75,10 @@ from utils.schema_utils import (
     remove_titles_from_schema,
 )
 
+
+
+
+logger = logging.getLogger(__name__)
 
 
 class LLMClient:
@@ -643,6 +648,7 @@ class LLMClient:
         max_tokens: Optional[int] = None,
         tools: Optional[List[type[LLMTool] | LLMDynamicTool]] = None,
     ):
+        logger.info(f"Generating content with {self.llm_provider} (model: {model})")
         parsed_tools = self.tool_calls_handler.parse_tools(tools)
 
         content = None
@@ -1088,6 +1094,9 @@ class LLMClient:
         tools: Optional[List[type[LLMTool] | LLMDynamicTool]] = None,
         max_tokens: Optional[int] = None,
     ) -> dict:
+        logger.info(
+            f"Generating structured content with {self.llm_provider} (model: {model})"
+        )
         parsed_tools = self.tool_calls_handler.parse_tools(tools)
 
         for attempt in range(3):
@@ -1574,6 +1583,7 @@ class LLMClient:
         max_tokens: Optional[int] = None,
         tools: Optional[List[type[LLMTool] | LLMDynamicTool]] = None,
     ):
+        logger.info(f"Streaming content with {self.llm_provider} (model: {model})")
         parsed_tools = self.tool_calls_handler.parse_tools(tools)
 
         match self.llm_provider:
@@ -2279,6 +2289,9 @@ class LLMClient:
         tools: Optional[List[type[LLMTool] | LLMDynamicTool]] = None,
         max_tokens: Optional[int] = None,
     ):
+        logger.info(
+            f"Streaming structured content with {self.llm_provider} (model: {model})"
+        )
         parsed_tools = self.tool_calls_handler.parse_tools(tools)
 
         match self.llm_provider:
