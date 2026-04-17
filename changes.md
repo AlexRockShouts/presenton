@@ -1,3 +1,14 @@
+### 2026-04-18 - Fixed Puppeteer ERR_CONNECTION_REFUSED in PPTX/PDF Exports
+
+Fixed `net::ERR_CONNECTION_REFUSED` during PPTX/PDF exports: Puppeteer navigated to `http://localhost/pdf-maker` (port 80, refused) instead of Next.js on port 3000.
+
+#### Key Changes
+- **servers/nextjs/app/api/presentation_to_pptx_model/route.ts** & **electron/servers/nextjs/app/api/presentation_to_pptx_model/route.ts**:
+  - Updated `page.goto(`http://localhost/pdf-maker?id=${id}`` → `http://localhost:3000/pdf-maker?id=${id}`
+- **servers/nextjs/app/api/export-as-pdf/route.ts** & **electron/servers/nextjs/app/api/export-as-pdf/route.ts**:
+  - Same URL fix.
+  - Electron fallback simplified to direct `:3000` (no Nginx proxy needed internally).
+
 # Project Changes
 
 ### 2026-04-17 - Lazy IconFinderService Initialization
