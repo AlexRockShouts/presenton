@@ -64,7 +64,8 @@ class TempFileService:
             os.rmdir(dir_path)
 
     def cleanup_base_dir(self):
-        self.cleanup_temp_dir(self.base_dir)
+        if os.path.exists(self.base_dir):
+            self.delete_dir_files(self.base_dir)
 
 
 TEMP_FILE_SERVICE = TempFileService()

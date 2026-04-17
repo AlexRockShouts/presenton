@@ -1,5 +1,16 @@
 # Project Changes
 
+### 2026-04-17 - Permissions Refinement
+
+Improved Dockerfile permissions to ensure smoother execution of LibreOffice, Chromium, and Ollama in restricted rootless environments.
+
+### Key Changes
+
+- **Dockerfile**
+  - Expanded pre-created directories in `/app_data` (`.cache`, `.config`, `.local`, `.ollama`, `.npm`) to ensure they are writable by the rootless user/group.
+  - Added `/var/cache/fontconfig` to the list of group-writable directories to support font cache generation by LibreOffice and other tools.
+  - Unified permission setup to use a more robust `mkdir -p` and `chmod -R g=u` pattern for all critical system paths.
+
 ### 2026-04-16 - Bug Fixes: Startup Script
 
 Fixed a critical initialization error and a race condition in `start.js`.
@@ -75,12 +86,16 @@ Added support for rootless container execution and Red Hat OpenShift, ensuring c
   - Included a `PersistentVolumeClaim` for `/app_data` and a `Route` for OpenShift connectivity.
   - Added environment variables `APP_DATA_DIRECTORY` and `TEMP_DIRECTORY`.
 
+- **servers/fastapi/services/temp_file_service.py**
+  - Modified `cleanup_base_dir` to only delete the contents of the temporary directory instead of the directory itself. This prevents `PermissionError` in environments where the container user has write access to the directory but lacks permission to remove the directory itself (common in OpenShift/Kubernetes).
+
 ### Modified Files
 
 - `Dockerfile`
 - `nginx.conf`
 - `start.js`
 - `servers/fastapi/services/database.py`
+- `servers/fastapi/services/temp_file_service.py`
 - `k8s/deployment.yaml`
 - `.github/workflows/docker-build-push.yml`
 - `.github/workflows/README.md`

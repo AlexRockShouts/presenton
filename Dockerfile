@@ -51,9 +51,12 @@ COPY start.js LICENSE NOTICE ./
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Setup permissions for rootless execution and OpenShift
-RUN mkdir -p /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx/conf.d && \
-    chown -R 1001:0 /app /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx && \
-    chmod -R g=u /app /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx
+# We pre-create some common directories in /app_data to ensure they have the right permissions
+RUN mkdir -p /app_data/.cache /app_data/.config /app_data/.local /app_data/.ollama /app_data/.npm \
+    /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx/conf.d \
+    /var/cache/fontconfig && \
+    chown -R 1001:0 /app /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx /var/cache/fontconfig && \
+    chmod -R g=u /app /app_data /tmp/presenton /var/cache/nginx /var/lib/nginx /var/log/nginx /etc/nginx /var/cache/fontconfig
 
 EXPOSE 8080
 USER 1001
