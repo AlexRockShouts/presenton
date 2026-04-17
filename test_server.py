@@ -13,8 +13,18 @@ Endpoint:
 
 import json
 import argparse
+import logging
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="[VersionServer] %(message)s",
+    stream=sys.stdout,
+)
+logger = logging.getLogger(__name__)
 
 VERSIONS = {
     "latest": "0.7.0",
@@ -53,7 +63,7 @@ class VersionHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def log_message(self, format, *args):
-        print(f"[VersionServer] {self.address_string()} - {format % args}", flush=True)
+        logger.info(f"{self.address_string()} - {format % args}")
 
 
 def main():
@@ -63,15 +73,15 @@ def main():
     args = parser.parse_args()
 
     server = HTTPServer((args.host, args.port), VersionHandler)
-    print(f"Presenton version server running at http://{args.host}:{args.port}", flush=True)
-    print(f"  GET /versions  -> version information", flush=True)
-    print(f"  Current 'latest' set to: {VERSIONS['latest']}", flush=True)
-    print("Press Ctrl+C to stop.", flush=True)
+    logger.info(f"Presenton version server running at http://{args.host}:{args.port}")
+    logger.info(f"  GET /versions  -> version information")
+    logger.info(f"  Current 'latest' set to: {VERSIONS['latest']}")
+    logger.info("Press Ctrl+C to stop.")
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nServer stopped.", flush=True)
+        logger.info("\nServer stopped.")
 
 
 if __name__ == "__main__":

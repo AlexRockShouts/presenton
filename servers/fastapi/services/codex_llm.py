@@ -10,6 +10,7 @@ uses tool_calls_handler.handle_tool_calls_openai().
 """
 
 import dirtyjson
+import logging
 from typing import Any, AsyncGenerator, List, Optional, Union
 
 from fastapi import HTTPException
@@ -26,6 +27,7 @@ from utils.schema_utils import ensure_strict_json_schema
 
 # Responses API requires flat tool format: {"type":"function","name":...,"description":...,"parameters":...}
 RESPONSE_SCHEMA_NAME = "ResponseSchema"
+logger = logging.getLogger(__name__)
 # Required tool choice for structured: force ResponseSchema (no plain-text fallback).
 STRUCTURED_TOOL_CHOICE = {"type": "function", "name": RESPONSE_SCHEMA_NAME}
 MAX_RECURSION_DEPTH = 5
@@ -187,7 +189,7 @@ class CodexLLMAdapter:
         depth: int = 0,
     ) -> Optional[str]:
         """Generate text; on tool_calls handle and recurse (like _generate_openai / _generate_anthropic)."""
-        print(
+        logger.debug(
             f"Codex generate: model={model} depth={depth} tools_count={len(tools) if tools else 0}"
         )
         responses_tools = _to_responses_tools(tools) if tools else None
@@ -210,7 +212,7 @@ class CodexLLMAdapter:
                 raise HTTPException(status_code=502, detail=f"Codex error: {msg_text}")
 
         if tool_calls_by_id and tools and depth < MAX_RECURSION_DEPTH:
-            print(
+            logger.debug(
                 f"Codex generate: tool calls detected depth={depth} count={len(tool_calls_by_id)}"
             )
             new_messages = await _messages_after_tool_turn(
@@ -234,7 +236,7 @@ class CodexLLMAdapter:
         depth: int = 0,
     ) -> AsyncGenerator[str, None]:
         """Stream text deltas; on tool_calls handle and recurse (like _stream_openai)."""
-        print(
+        logger.debug(
             f"Codex stream: model={model} depth={depth} tools_count={len(tools) if tools else 0}"
         )
         responses_tools = _to_responses_tools(tools) if tools else None
@@ -256,7 +258,7 @@ class CodexLLMAdapter:
                 raise HTTPException(status_code=502, detail=f"Codex stream error: {msg_text}")
 
         if tool_calls_by_id and tools and depth < MAX_RECURSION_DEPTH:
-            print(
+            logger.debug(
                 f"Codex stream: tool calls detected depth={depth} count={len(tool_calls_by_id)}"
             )
             new_messages = await _messages_after_tool_turn(
@@ -288,7 +290,7 @@ class CodexLLMAdapter:
         ResponseSchema tool to receive the model's JSON.
         """
         user_tools_count = len(tools) if tools else 0
-        print(
+        logger.debug(
             f"Codex stream_structured: model={model} depth={depth} strict={strict} "
             f"user_tools={user_tools_count} (always adding ResponseSchema tool for structured JSON)"
         )
@@ -315,7 +317,7 @@ class CodexLLMAdapter:
                 item = event.get("item") or {}
                 if item.get("type") == "function_call" and item.get("name") == RESPONSE_SCHEMA_NAME:
                     current_call_id = item.get("call_id", item.get("id"))
-                    print(
+                    logger.debug(
                         f"Codex stream_structured: ResponseSchema call started call_id={current_call_id}"
                     )
 
@@ -324,7 +326,7 @@ class CodexLLMAdapter:
                     delta = event.get("delta", "")
                     if delta:
                         # Log only first few chunks to avoid log spam
-                        print(
+                        logger.debug(
                             f"Codex stream_structured: ResponseSchema delta chunk len={len(delta)}"
                         )
                         yield delta
@@ -333,7 +335,7 @@ class CodexLLMAdapter:
                 if event.get("name") == RESPONSE_SCHEMA_NAME:
                     arguments = event.get("arguments", "")
                     if arguments:
-                        print(
+                        logger.debug(
                             f"Codex stream_structured: ResponseSchema arguments.done len={len(arguments)}"
                         )
                         yield arguments
@@ -345,7 +347,7 @@ class CodexLLMAdapter:
                     if item.get("name") == RESPONSE_SCHEMA_NAME:
                         arguments = item.get("arguments", "")
                         if arguments:
-                            print(
+                            logger.debug(
                                 f"Codex stream_structured: ResponseSchema output_item.done len={len(arguments)}"
                             )
                             yield arguments
@@ -359,7 +361,7 @@ class CodexLLMAdapter:
             if v.get("name") != RESPONSE_SCHEMA_NAME
         }
         if other_tool_calls and tools and depth < MAX_RECURSION_DEPTH:
-            print(
+            logger.debug(
                 f"Codex stream_structured: recursing for non-ResponseSchema tool calls "
                 f"depth={depth} count={len(other_tool_calls)}"
             )
@@ -386,7 +388,7 @@ class CodexLLMAdapter:
     ) -> Optional[dict]:
         """Collect stream and parse JSON (like _generate_openai_structured)."""
         user_tools_count = len(tools) if tools else 0
-        print(
+        logger.debug(
             f"Codex generate_structured: model={model} depth={depth} strict={strict} "
             f"user_tools={user_tools_count} (using ResponseSchema tool for structured JSON)"
         )
@@ -404,7 +406,7 @@ class CodexLLMAdapter:
         if depth == 0:
             try:
                 parsed = dict(dirtyjson.loads(raw))
-                print(
+                logger.debug(
                     f"Codex generate_structured: parsed JSON keys={list(parsed.keys())[:8]}"
                 )
                 return parsed
@@ -413,7 +415,7 @@ class CodexLLMAdapter:
                 if start >= 0:
                     try:
                         parsed = dict(dirtyjson.loads(raw[start:]))
-                        print(
+                        logger.debug(
                             "Codex generate_structured: parsed JSON from offset "
                             f"{start} keys={list(parsed.keys())[:8]}"
                         )

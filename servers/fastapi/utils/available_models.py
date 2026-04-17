@@ -21,13 +21,18 @@ async def list_available_openai_compatible_models(url: str, api_key: str) -> lis
     async with _get_httpx_client() as http_client:
         client = AsyncOpenAI(api_key=api_key, base_url=url, http_client=http_client)
         try:
+            # Some non-standard gateways (like BIT RHOAI) might require a model parameter
+            # even for listing models. If it fails, we gracefully return an empty list.
             models = (await client.models.list()).data
             if models:
                 ids = list(map(lambda x: x.id, models))
                 logger.debug(f"Discovered models from {url}: {ids}")
                 return ids
         except Exception as e:
-            logger.warning(f"Failed to list models from {url}: {e}")
+            logger.warning(
+                f"Failed to list models from {url}: {e}. "
+                "This is often due to non-standard API implementations and will be ignored."
+            )
     return []
 
 

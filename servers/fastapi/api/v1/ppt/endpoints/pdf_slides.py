@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import subprocess
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from pydantic import BaseModel
@@ -13,6 +14,7 @@ from constants.documents import PDF_MIME_TYPES
 
 
 PDF_SLIDES_ROUTER = APIRouter(prefix="/pdf-slides", tags=["PDF Slides"])
+logger = logging.getLogger(__name__)
 
 
 class PdfSlideData(BaseModel):
@@ -71,7 +73,7 @@ async def process_pdf_slides(
             screenshot_paths = await DocumentsLoader.get_page_images_from_pdf_async(
                 pdf_path, temp_dir
             )
-            print(f"Generated {len(screenshot_paths)} PDF screenshots")
+            logger.info(f"Generated {len(screenshot_paths)} PDF screenshots")
 
             # Move screenshots to images directory and generate URLs
             images_dir = get_images_directory()
@@ -110,7 +112,7 @@ async def process_pdf_slides(
             )
 
         except Exception as e:
-            print(f"Error processing PDF slides: {str(e)}")
+            logger.error(f"Error processing PDF slides: {str(e)}")
             raise HTTPException(
                 status_code=500, detail=f"Failed to process PDF: {str(e)}"
             )

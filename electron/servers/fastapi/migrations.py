@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from pathlib import Path
 
 from alembic import command
@@ -8,6 +9,8 @@ from sqlalchemy import create_engine, inspect, text
 
 from utils.db_utils import get_database_url_and_connect_args
 from utils.get_env import get_migrate_database_on_startup_env
+
+logger = logging.getLogger(__name__)
 
 
 LEGACY_BASELINE_REVISION = "00b3c27a13bc"
@@ -19,9 +22,9 @@ async def migrate_database_on_startup() -> None:
 
     try:
         await asyncio.to_thread(_run_migrations)
-        print("Migrations run successfully", flush=True)
+        logger.info("Migrations run successfully")
     except Exception as exc:
-        print(f"Error running migrations: {exc}", flush=True)
+        logger.error(f"Error running migrations: {exc}")
         raise
 
 
@@ -77,10 +80,9 @@ def _stamp_legacy_database_if_needed(config: Config, database_url: str) -> None:
         if LEGACY_BASELINE_REVISION in known_revisions
         else script.get_base()
     )
-    print(
+    logger.info(
         "Detected legacy database without migration reference. "
-        f"Stamping revision to {baseline_revision} before upgrading.",
-        flush=True,
+        f"Stamping revision to {baseline_revision} before upgrading."
     )
     command.stamp(config, baseline_revision)
 

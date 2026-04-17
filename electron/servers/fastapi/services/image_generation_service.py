@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import logging
 import os
 import aiohttp
 from fastapi import HTTPException
@@ -32,6 +33,8 @@ from utils.image_provider import (
     is_comfyui_selected,
 )
 import uuid
+
+logger = logging.getLogger(__name__)
 
 
 class ImageGenerationService:
@@ -89,17 +92,17 @@ class ImageGenerationService:
         - Output Directory is used for saving the generated image not the stock provider.
         """
         if self.is_image_generation_disabled:
-            print("Image generation is disabled. Using placeholder image.")
+            logger.info("Image generation is disabled. Using placeholder image.")
             return self._to_frontend_url("/static/images/placeholder.jpg")
 
         if not self.image_gen_func:
-            print("No image generation function found. Using placeholder image.")
+            logger.warning("No image generation function found. Using placeholder image.")
             return self._to_frontend_url("/static/images/placeholder.jpg")
 
         image_prompt = prompt.get_image_prompt(
             with_theme=not self.is_stock_provider_selected()
         )
-        print(f"Request - Generating Image for {image_prompt}")
+        logger.debug(f"Request - Generating Image for {image_prompt}")
 
         try:
             if self.is_stock_provider_selected():
@@ -127,7 +130,7 @@ class ImageGenerationService:
             raise Exception(f"Image not found at {image_path}")
 
         except Exception as e:
-            print(f"Error generating image: {e}")
+            logger.error(f"Error generating image: {e}")
             return self._to_frontend_url("/static/images/placeholder.jpg")
 
     async def generate_image_openai(
@@ -491,7 +494,7 @@ class ImageGenerationService:
         if not prompt_id:
             raise Exception("No prompt_id returned from ComfyUI")
 
-        print(f"ComfyUI workflow submitted. Prompt ID: {prompt_id}")
+        logger.info(f"ComfyUI workflow submitted. Prompt ID: {prompt_id}")
         return prompt_id
 
     async def _wait_for_comfyui_completion(
@@ -532,17 +535,17 @@ class ImageGenerationService:
                 if "status" in execution_data:
                     status = execution_data["status"]
                     if status.get("completed", False):
-                        print("ComfyUI workflow completed successfully")
+                        logger.info("ComfyUI workflow completed successfully")
                         return status_data
                     if "error" in status:
                         raise Exception(f"ComfyUI workflow error: {status['error']}")
 
                 # Also check if outputs exist (alternative completion check)
                 if "outputs" in execution_data and execution_data["outputs"]:
-                    print("ComfyUI workflow completed (outputs found)")
+                    logger.info("ComfyUI workflow completed (outputs found)")
                     return status_data
 
-            print(f"Waiting for ComfyUI workflow... ({int(elapsed)}s)")
+            logger.debug(f"Waiting for ComfyUI workflow... ({int(elapsed)}s)")
 
     async def _download_comfyui_image(
         self,
@@ -592,7 +595,7 @@ class ImageGenerationService:
                         with open(image_path, "wb") as f:
                             f.write(image_data)
 
-                        print(f"Downloaded image from ComfyUI: {image_path}")
+                        logger.info(f"Downloaded image from ComfyUI: {image_path}")
                         return image_path
                     else:
                         raise Exception(f"Failed to download image: {response.status}")

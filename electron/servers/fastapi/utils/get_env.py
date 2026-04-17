@@ -174,3 +174,7 @@ def get_sentry_send_default_pii_env():
 
 def get_verify_ssl_env():
     return os.getenv("VERIFY_SSL")
+
+
+def get_log_level_env():
+    return os.getenv("LOG_LEVEL", "info")

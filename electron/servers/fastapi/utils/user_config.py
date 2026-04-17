@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 
 from models.user_config import UserConfig
 from utils.get_env import (
@@ -73,6 +74,8 @@ from utils.set_env import (
     set_codex_model_env,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def get_user_config():
     user_config_path = get_user_config_path_env()
@@ -83,7 +86,7 @@ def get_user_config():
             with open(user_config_path, "r") as f:
                 existing_config = UserConfig(**json.load(f))
     except Exception:
-        print("Error while loading user config")
+        logger.error("Error while loading user config")
         pass
 
     return UserConfig(

@@ -1,12 +1,15 @@
 import asyncio
 import os
 import mimetypes
+import logging
 from typing import List, Optional
 from urllib.parse import urlparse
 
 import aiohttp
 
 import uuid
+
+logger = logging.getLogger(__name__)
 
 
 async def download_file(
@@ -47,33 +50,33 @@ async def download_file(
                     with open(save_path, "wb") as file:
                         async for chunk in response.content.iter_chunked(8192):
                             file.write(chunk)
-                    print(f"File downloaded successfully: {save_path}")
+                    logger.info(f"File downloaded successfully: {save_path}")
                     return save_path
                 else:
-                    print(f"Failed to download file. HTTP status: {response.status}")
+                    logger.error(f"Failed to download file. HTTP status: {response.status}")
                     return None
 
     except Exception as e:
-        print(f"Error downloading file from {url}: {e}")
+        logger.error(f"Error downloading file from {url}: {e}")
         return None
 
 
 async def download_files(
     urls: List[str], save_directory: str, headers: Optional[dict] = None
 ) -> List[Optional[str]]:
-    print(f"Starting download of {len(urls)} files to {save_directory}")
+    logger.info(f"Starting download of {len(urls)} files to {save_directory}")
     coroutines = [download_file(url, save_directory, headers) for url in urls]
     results = await asyncio.gather(*coroutines, return_exceptions=True)
     final_results = []
     for i, result in enumerate(results):
         if isinstance(result, Exception):
-            print(f"Exception during download of {urls[i]}: {result}")
+            logger.error(f"Exception during download of {urls[i]}: {result}")
             final_results.append(None)
         else:
             final_results.append(result)
 
     successful_downloads = sum(1 for result in final_results if result is not None)
-    print(
+    logger.info(
         f"Download completed: {successful_downloads}/{len(urls)} files downloaded successfully"
     )
 

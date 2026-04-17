@@ -11,6 +11,7 @@ import aiohttp
 import asyncio
 import xml.etree.ElementTree as ET
 import re
+import logging
 
 from services.documents_loader import DocumentsLoader
 from utils.asset_directory_utils import get_images_directory
@@ -19,6 +20,7 @@ from constants.documents import POWERPOINT_TYPES
 
 
 PPTX_SLIDES_ROUTER = APIRouter(prefix="/pptx-slides", tags=["PPTX Slides"])
+logger = logging.getLogger(__name__)
 
 
 class SlideData(BaseModel):
@@ -211,7 +213,7 @@ def extract_fonts_from_oxml(xml_content: str) -> List[str]:
         return list(fonts)
 
     except Exception as e:
-        print(f"Error extracting fonts from OXML: {e}")
+        logger.error(f"Error extracting fonts from OXML: {e}")
         return []
 
 
@@ -236,7 +238,7 @@ async def check_google_font_availability(font_name: str) -> bool:
                 return response.status == 200
 
     except Exception as e:
-        print(f"Error checking Google Font availability for {font_name}: {e}")
+        logger.error(f"Error checking Google Font availability for {font_name}: {e}")
         return False
 
 
@@ -342,11 +344,11 @@ async def process_pptx_slides(
             screenshot_paths = await DocumentsLoader.get_page_images_from_pdf_async(
                 pdf_path, temp_dir
             )
-            print(f"Screenshot paths: {screenshot_paths}")
+            logger.info(f"Screenshot paths: {screenshot_paths}")
 
             # Analyze fonts across all slides
             font_analysis = await analyze_fonts_in_all_slides(slide_xmls)
-            print(
+            logger.info(
                 f"Font analysis completed: {len(font_analysis.internally_supported_fonts)} supported, {len(font_analysis.not_supported_fonts)} not supported"
             )
 
@@ -498,13 +500,13 @@ async def _install_fonts(fonts: List[UploadFile], temp_dir: str) -> None:
                 capture_output=True,
             )
         except subprocess.CalledProcessError as e:
-            print(f"Warning: Failed to install font {font_file.filename}: {e}")
+            logger.warning(f"Failed to install font {font_file.filename}: {e}")
 
     # Refresh font cache
     try:
         subprocess.run(["fc-cache", "-f", "-v"], check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        print(f"Warning: Failed to refresh font cache: {e}")
+        logger.warning(f"Failed to refresh font cache: {e}")
 
 
 def _extract_slide_xmls(pptx_path: str, temp_dir: str) -> List[str]:
@@ -562,10 +564,10 @@ async def _convert_pptx_to_pdf(pptx_path: str, temp_dir: str) -> str:
         env = os.environ.copy()
         env["FONTCONFIG_FILE"] = fonts_conf_path
 
-        print(f"Found {slide_count} slides in presentation")
+        logger.info(f"Found {slide_count} slides in presentation")
 
         # Step 1: Convert PPTX to PDF using LibreOffice
-        print("Starting LibreOffice PDF conversion...")
+        logger.info("Starting LibreOffice PDF conversion...")
         pdf_filename = "temp_presentation.pdf"
         pdf_path = os.path.join(screenshots_dir, pdf_filename)
 
@@ -587,9 +589,9 @@ async def _convert_pptx_to_pdf(pptx_path: str, temp_dir: str) -> str:
                 env=env,
             )
 
-            print(f"LibreOffice PDF conversion output: {result.stdout}")
+            logger.info(f"LibreOffice PDF conversion output: {result.stdout}")
             if result.stderr:
-                print(f"LibreOffice PDF conversion warnings: {result.stderr}")
+                logger.warning(f"LibreOffice PDF conversion warnings: {result.stderr}")
         except subprocess.TimeoutExpired:
             raise Exception("LibreOffice PDF conversion timed out after 120 seconds")
         except subprocess.CalledProcessError as e:
@@ -602,7 +604,7 @@ async def _convert_pptx_to_pdf(pptx_path: str, temp_dir: str) -> str:
             raise Exception("LibreOffice failed to generate PDF file")
 
         actual_pdf_path = os.path.join(screenshots_dir, pdf_files[0])
-        print(f"Generated PDF: {actual_pdf_path}")
+        logger.info(f"Generated PDF: {actual_pdf_path}")
         return actual_pdf_path
 
     except Exception as e:

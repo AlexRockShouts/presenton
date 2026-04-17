@@ -101,13 +101,13 @@ async def check_llm_and_image_provider_api_or_model_availability():
                 raise Exception("CUSTOM_MODEL must be provided")
             if not custom_llm_url:
                 raise Exception("CUSTOM_LLM_URL must be provided")
-            available_models = await list_available_openai_compatible_models(
-                custom_llm_url, get_custom_llm_api_key_env() or "null"
-            )
+            
+            # For custom LLM providers, we skip strict model validation because many
+            # corporate gateways (like BIT RHOAI) do not support the /models endpoint
+            # or require parameters that the standard client doesn't provide.
             print("-" * 50)
-            print("Available models: ", available_models)
-            if custom_model not in available_models:
-                raise Exception(f"Model {custom_model} is not available")
+            print(f"Custom LLM provider selected. Using model: {custom_model}")
+            print("-" * 50)
 
         # Skip image provider and API key checks if image generation is disabled
         if is_image_generation_disabled():

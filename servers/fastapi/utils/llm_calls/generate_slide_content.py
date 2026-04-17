@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Optional
 from models.llm_message import LLMSystemMessage, LLMUserMessage
@@ -7,6 +8,8 @@ from services.llm_client import LLMClient
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_provider import get_model
 from utils.schema_utils import add_field_in_schema, remove_fields_from_schema
+
+logger = logging.getLogger(__name__)
 
 
 def get_system_prompt(
@@ -132,7 +135,7 @@ async def get_slide_content_from_type_and_outline(
         verbosity,
         instructions,
     )
-    print(
+    logger.debug(
         f"get_slide_content_from_type_and_outline: model={model} outline_len={len(outline.content or '')} language={language}"
     )
     try:
@@ -142,11 +145,11 @@ async def get_slide_content_from_type_and_outline(
             response_format=response_schema,
             strict=False,
         )
-        print(
+        logger.debug(
             f"get_slide_content_from_type_and_outline: response is None={response is None} keys={list(response.keys())[:6] if isinstance(response, dict) else None}"
         )
         return response
 
     except Exception as e:
-        print(f"get_slide_content_from_type_and_outline: exception={e}")
+        logger.error(f"get_slide_content_from_type_and_outline: exception={e}")
         raise handle_llm_client_exceptions(e)

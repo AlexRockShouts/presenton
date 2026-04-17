@@ -1,6 +1,7 @@
 import os
 import uuid
 import shutil
+import logging
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, File, UploadFile
 from pydantic import BaseModel
@@ -15,6 +16,7 @@ except ImportError:
     FONTTOOLS_AVAILABLE = False
 
 FONTS_ROUTER = APIRouter(prefix="/fonts", tags=["fonts"])
+logger = logging.getLogger(__name__)
 
 # Supported font file extensions
 SUPPORTED_FONT_EXTENSIONS = {
@@ -114,7 +116,7 @@ def extract_font_name_from_file(file_path: str) -> str:
         font.close()
     except Exception as e:
         # If font parsing fails, fallback to filename
-        print(f"Error reading font metadata from {file_path}: {e}")
+        logger.error(f"Error reading font metadata from {file_path}: {e}")
     
     # Fallback to filename parsing
     filename = os.path.basename(file_path)
@@ -185,7 +187,7 @@ async def upload_font(
         # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
-        print(f"Error uploading font: {str(e)}")
+        logger.error(f"Error uploading font: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error uploading font: {str(e)}"
@@ -240,7 +242,7 @@ async def list_fonts():
         )
         
     except Exception as e:
-        print(f"Error listing fonts: {str(e)}")
+        logger.error(f"Error listing fonts: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error listing fonts: {str(e)}"
@@ -279,7 +281,7 @@ async def get_uploaded_fonts():
         return UploadedFontsResponse(fonts=fonts)
 
     except Exception as e:
-        print(f"Error getting uploaded fonts: {str(e)}")
+        logger.error(f"Error getting uploaded fonts: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error getting uploaded fonts: {str(e)}"
@@ -328,8 +330,8 @@ async def delete_font(filename: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error deleting font: {str(e)}")
+        logger.error(f"Error deleting font: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error deleting font: {str(e)}"
-        ) 
+        )

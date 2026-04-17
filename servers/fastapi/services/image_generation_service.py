@@ -471,7 +471,7 @@ class ImageGenerationService:
         if not prompt_id:
             raise Exception("No prompt_id returned from ComfyUI")
 
-        print(f"ComfyUI workflow submitted. Prompt ID: {prompt_id}")
+        logger.info(f"ComfyUI workflow submitted. Prompt ID: {prompt_id}")
         return prompt_id
 
     async def _wait_for_comfyui_completion(
@@ -512,17 +512,17 @@ class ImageGenerationService:
                 if "status" in execution_data:
                     status = execution_data["status"]
                     if status.get("completed", False):
-                        print("ComfyUI workflow completed successfully")
+                        logger.info("ComfyUI workflow completed successfully")
                         return status_data
                     if "error" in status:
                         raise Exception(f"ComfyUI workflow error: {status['error']}")
 
                 # Also check if outputs exist (alternative completion check)
                 if "outputs" in execution_data and execution_data["outputs"]:
-                    print("ComfyUI workflow completed (outputs found)")
+                    logger.info("ComfyUI workflow completed (outputs found)")
                     return status_data
 
-            print(f"Waiting for ComfyUI workflow... ({int(elapsed)}s)")
+            logger.debug(f"Waiting for ComfyUI workflow... ({int(elapsed)}s)")
 
     async def _download_comfyui_image(
         self,
@@ -572,7 +572,7 @@ class ImageGenerationService:
                         with open(image_path, "wb") as f:
                             f.write(image_data)
 
-                        print(f"Downloaded image from ComfyUI: {image_path}")
+                        logger.info(f"Downloaded image from ComfyUI: {image_path}")
                         return image_path
                     else:
                         raise Exception(f"Failed to download image: {response.status}")

@@ -1,4 +1,6 @@
 import os
+import logging
+import sys
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,8 +15,19 @@ from utils.get_env import (
     get_app_data_directory_env,
     get_sentry_send_default_pii_env,
     get_sentry_traces_sample_rate_env,
+    get_log_level_env,
 )
 from utils.path_helpers import get_resource_path
+
+# Configure logging
+log_level_str = get_log_level_env().upper()
+log_level = getattr(logging, log_level_str, logging.INFO)
+logging.basicConfig(
+    level=log_level,
+    format="%(levelname)s:     %(message)s",
+    stream=sys.stdout,
+)
+logger = logging.getLogger(__name__)
 
 FASTAPI_SENTRY_DSN = "https://a7831b44cb7096645e4b7569f53d070c@o4509882707410944.ingest.us.sentry.io/4511171447947264"
 
@@ -64,13 +77,13 @@ if app_data_dir:
 
 # Mount static directory for icons, placeholder images, etc.
 static_dir = get_resource_path("static")
-print(f"[FastAPI] Static directory path: {static_dir}")
-print(f"[FastAPI] Static directory exists: {os.path.exists(static_dir)}")
+logger.info(f"Static directory path: {static_dir}")
+logger.info(f"Static directory exists: {os.path.exists(static_dir)}")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
-    print(f"[FastAPI] Static files mounted successfully from {static_dir}")
+    logger.info(f"Static files mounted successfully from {static_dir}")
 else:
-    print(f"[FastAPI] WARNING: Static directory not found at {static_dir}")
+    logger.warning(f"Static directory not found at {static_dir}")
 
 # Middlewares
 origins = ["*"]

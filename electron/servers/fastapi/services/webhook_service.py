@@ -1,9 +1,12 @@
 import asyncio
+import logging
 import aiohttp
 from sqlmodel import select
 from enums.webhook_event import WebhookEvent
 from models.sql.webhook_subscription import WebhookSubscription
 from services.database import get_async_session
+
+logger = logging.getLogger(__name__)
 
 
 class WebhookService:
@@ -51,5 +54,5 @@ class WebhookService:
                     pass
 
         except Exception as e:
-            print(f"Error sending request to webhook {subscription.id}: {e}")
+            logger.error(f"Error sending request to webhook {subscription.id}: {e}")
             pass

@@ -1,5 +1,6 @@
 import json
 import os
+import logging
 import aiohttp
 from typing import Literal
 import uuid
@@ -12,6 +13,8 @@ from services.pptx_presentation_creator import PptxPresentationCreator
 from services.temp_file_service import TEMP_FILE_SERVICE
 from utils.asset_directory_utils import get_exports_directory
 import uuid
+
+logger = logging.getLogger(__name__)
 
 
 async def export_presentation(
@@ -26,7 +29,7 @@ async def export_presentation(
             ) as response:
                 if response.status != 200:
                     error_text = await response.text()
-                    print(f"Failed to get PPTX model: {error_text}")
+                    logger.error(f"Failed to get PPTX model: {error_text}")
                     raise HTTPException(
                         status_code=500,
                         detail="Failed to convert presentation to PPTX model",

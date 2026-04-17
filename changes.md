@@ -1,5 +1,38 @@
 # Project Changes
 
+### 2026-04-17 - Full Transition to Structured Logging
+
+Completed the transition from basic `print` statements to a unified structured logging system across the entire FastAPI service and its Electron-specific components.
+
+### Key Changes
+
+- **Unified Logger Implementation**
+  - Replaced all remaining `print` statements in production code with module-level `logging.getLogger(__name__)` calls.
+  - Applied changes to both the main server (`servers/fastapi`) and the Electron-wrapped backend (`electron/servers/fastapi`).
+- **Comprehensive Coverage**
+  - Updated critical services including `PptxPresentationCreator`, `ImageGenerationService`, `WebhookService`, and `ConcurrentService`.
+  - Refined logging in complex API endpoints like `/generate`, `/slide-to-html`, and `/pptx-slides` to improve traceability and error diagnostics.
+- **Enhanced MCP Server Observability**
+  - Transitioned the MCP (OpenAPI) server to use the standard logger, providing better visibility into its startup and request handling lifecycle.
+- **Improved Database & Export Logs**
+  - Standardized logging during database migrations and presentation export processes (PPTX/PDF).
+- **Consolidated Logging Configuration**
+  - Ensured that the `LOG_LEVEL` environment variable is respected across all components, including the Electron-specific backend.
+
+### 2026-04-17 - Robust Model Availability & Listing
+
+Fixed application startup failures caused by non-standard LLM provider API implementations and improved support for custom LLM infrastructure.
+
+### Key Changes
+
+- **Manual Model Override for Custom Providers**
+  - Updated `model_availability.py` to skip strict validation of `CUSTOM_MODEL` against the `/models` endpoint when `LLM="custom"` is selected. This allows users to manually specify models even if the provider doesn't list them.
+- **Robust Model Discovery**
+  - Updated `available_models.py` to gracefully handle `400 Bad Request` errors (e.g., "Model is required") when listing models from non-standard gateways.
+  - Improved error logging during model discovery to provide more context for connectivity issues.
+- **Startup Resilience**
+  - Ensured the application can successfully complete its initialization even if a provider's `/models` endpoint is unreachable or requires additional parameters.
+
 ### 2026-04-17 - Improved Debug Logging & Observability
 
 Enhanced the observability of the FastAPI service by implementing a configurable logging system and replacing basic `print` statements with structured logs.

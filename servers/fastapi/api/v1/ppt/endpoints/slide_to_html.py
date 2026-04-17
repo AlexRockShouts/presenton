@@ -1,5 +1,6 @@
 import os
 import base64
+import logging
 from datetime import datetime
 from typing import Optional, List, Dict
 from uuid import UUID
@@ -22,6 +23,7 @@ from models.sql.template import TemplateModel
 
 # Create separate routers for each functionality
 SLIDE_TO_HTML_ROUTER = APIRouter(prefix="/slide-to-html", tags=["slide-to-html"])
+logger = logging.getLogger(__name__)
 HTML_TO_REACT_ROUTER = APIRouter(prefix="/html-to-react", tags=["html-to-react"])
 HTML_EDIT_ROUTER = APIRouter(prefix="/html-edit", tags=["html-edit"])
 LAYOUT_MANAGEMENT_ROUTER = APIRouter(
@@ -150,7 +152,7 @@ async def generate_html_from_slide(
     Raises:
         HTTPException: If API call fails or no content is generated
     """
-    print(
+    logger.info(
         f"Generating HTML from slide image and XML using OpenAI GPT-5 Responses API..."
     )
     try:
@@ -175,7 +177,7 @@ async def generate_html_from_slide(
             },
         ]
 
-        print("Making Responses API request for HTML generation...")
+        logger.info("Making Responses API request for HTML generation...")
         response = client.responses.create(
             model="gpt-5",
             input=input_payload,
@@ -190,7 +192,7 @@ async def generate_html_from_slide(
             or ""
         )
 
-        print(f"Received HTML content length: {len(html_content)}")
+        logger.info(f"Received HTML content length: {len(html_content)}")
 
         if not html_content:
             raise HTTPException(
@@ -200,15 +202,15 @@ async def generate_html_from_slide(
         return html_content
 
     except APIError as e:
-        print(f"OpenAI API Error: {e}")
+        logger.error(f"OpenAI API Error: {e}")
         raise HTTPException(
             status_code=500, detail=f"OpenAI API error during HTML generation: {str(e)}"
         )
     except Exception as e:
         # Handle various API errors
         error_msg = str(e)
-        print(f"Exception occurred: {error_msg}")
-        print(f"Exception type: {type(e)}")
+        logger.error(f"Exception occurred: {error_msg}")
+        logger.error(f"Exception type: {type(e)}")
         if "timeout" in error_msg.lower():
             raise HTTPException(
                 status_code=408,
@@ -248,7 +250,7 @@ async def generate_react_component_from_html(
     try:
         client = OpenAI(api_key=api_key)
 
-        print("Making Responses API request for React component generation...")
+        logger.info("Making Responses API request for React component generation...")
 
         # Build payload with optional image
         content_parts = [{"type": "input_text", "text": f"HTML INPUT:\n{html_content}"}]
@@ -274,7 +276,7 @@ async def generate_react_component_from_html(
             or ""
         )
 
-        print(f"Received React content length: {len(react_content)}")
+        logger.info(f"Received React content length: {len(react_content)}")
 
         if not react_content:
             raise HTTPException(
@@ -299,11 +301,11 @@ async def generate_react_component_from_html(
                 filtered_lines.append(line)
 
         filtered_react_content = "\n".join(filtered_lines)
-        print(f"Filtered React content length: {len(filtered_react_content)}")
+        logger.info(f"Filtered React content length: {len(filtered_react_content)}")
 
         return filtered_react_content
     except APIError as e:
-        print(f"OpenAI API Error: {e}")
+        logger.error(f"OpenAI API Error: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"OpenAI API error during React generation: {str(e)}",
@@ -311,8 +313,8 @@ async def generate_react_component_from_html(
     except Exception as e:
         # Handle various API errors
         error_msg = str(e)
-        print(f"Exception occurred: {error_msg}")
-        print(f"Exception type: {type(e)}")
+        logger.error(f"Exception occurred: {error_msg}")
+        logger.error(f"Exception type: {type(e)}")
         if "timeout" in error_msg.lower():
             raise HTTPException(
                 status_code=408,
@@ -358,7 +360,7 @@ async def edit_html_with_images(
     try:
         client = OpenAI(api_key=api_key)
 
-        print("Making Responses API request for HTML editing...")
+        logger.info("Making Responses API request for HTML editing...")
 
         current_data_url = f"data:{media_type};base64,{current_ui_base64}"
         sketch_data_url = (
@@ -396,7 +398,7 @@ async def edit_html_with_images(
             or ""
         )
 
-        print(f"Received edited HTML content length: {len(edited_html)}")
+        logger.info(f"Received edited HTML content length: {len(edited_html)}")
 
         if not edited_html:
             raise HTTPException(
@@ -407,15 +409,15 @@ async def edit_html_with_images(
         return edited_html
 
     except APIError as e:
-        print(f"OpenAI API Error: {e}")
+        logger.error(f"OpenAI API Error: {e}")
         raise HTTPException(
             status_code=500, detail=f"OpenAI API error during HTML editing: {str(e)}"
         )
     except Exception as e:
         # Handle various API errors
         error_msg = str(e)
-        print(f"Exception occurred: {error_msg}")
-        print(f"Exception type: {type(e)}")
+        logger.error(f"Exception occurred: {error_msg}")
+        logger.error(f"Exception type: {type(e)}")
         if "timeout" in error_msg.lower():
             raise HTTPException(
                 status_code=408,
@@ -494,7 +496,7 @@ async def convert_slide_to_html(request: SlideToHtmlRequest):
         raise
     except Exception as e:
         # Log the full error for debugging
-        print(f"Unexpected error during slide to HTML processing: {str(e)}")
+        logger.error(f"Unexpected error during slide to HTML processing: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error processing slide to HTML: {str(e)}"
         )
@@ -562,7 +564,7 @@ async def convert_html_to_react(request: HtmlToReactRequest):
         raise
     except Exception as e:
         # Log the full error for debugging
-        print(f"Unexpected error during HTML to React processing: {str(e)}")
+        logger.error(f"Unexpected error during HTML to React processing: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error processing HTML to React: {str(e)}"
         )
@@ -655,7 +657,7 @@ async def edit_html_with_images_endpoint(
         raise
     except Exception as e:
         # Log the full error for debugging
-        print(f"Unexpected error during HTML editing: {str(e)}")
+        logger.error(f"Unexpected error during HTML editing: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error processing HTML editing: {str(e)}"
         )
@@ -765,7 +767,7 @@ async def save_layouts(
         raise
     except Exception as e:
         await session.rollback()
-        print(f"Unexpected error saving layouts: {str(e)}")
+        logger.error(f"Unexpected error saving layouts: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error while saving layouts: {str(e)}",
@@ -864,7 +866,7 @@ async def get_layouts(
         # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
-        print(f"Error retrieving layouts for presentation {presentation}: {str(e)}")
+        logger.error(f"Error retrieving layouts for presentation {presentation}: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error while retrieving layouts: {str(e)}",
@@ -936,7 +938,7 @@ async def get_presentations_summary(
         )
 
     except Exception as e:
-        print(f"Error retrieving presentations summary: {str(e)}")
+        logger.error(f"Error retrieving presentations summary: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error while retrieving presentations summary: {str(e)}",

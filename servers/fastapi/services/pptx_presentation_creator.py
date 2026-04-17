@@ -1,4 +1,5 @@
 import os
+import logging
 from typing import List, Optional
 from lxml import etree
 from services.html_to_text_runs_service import (
@@ -48,6 +49,8 @@ from utils.image_utils import (
     set_image_opacity,
 )
 import uuid
+
+logger = logging.getLogger(__name__)
 
 BLANK_SLIDE_LAYOUT = 6
 
@@ -332,7 +335,7 @@ class PptxPresentationCreator:
             try:
                 image = Image.open(image_path)
             except Exception:
-                print(f"Could not open image: {image_path}")
+                logger.error(f"Could not open image: {image_path}")
                 return
 
             image = image.convert("RGBA")
@@ -453,7 +456,7 @@ class PptxPresentationCreator:
             )
             shape.adjustments[0] = normalized_border_radius
         except Exception:
-            print("Could not apply border radius.")
+            logger.error("Could not apply border radius.")
 
     def apply_fill_to_shape(self, shape: Shape, fill: Optional[PptxFillModel] = None):
         if not fill:
@@ -574,7 +577,7 @@ class PptxPresentationCreator:
             sF = ts.get_or_change_to_srgbClr()
             self.get_sub_element(sF, "a:alpha", val=str(alpha))
         except Exception as e:
-            print(f"Could not set fill opacity: {e}")
+            logger.error(f"Could not set fill opacity: {e}")
 
     def get_margined_position(
         self, position: PptxPositionModel, margin: Optional[PptxSpacingModel]
@@ -625,7 +628,7 @@ class PptxPresentationCreator:
             elif strike is False:
                 rPr.set("strike", "noStrike")
         except Exception as e:
-            print(f"Could not apply strikethrough: {e}")
+            logger.error(f"Could not apply strikethrough: {e}")
 
     def save(self, path: str):
         self._ppt.save(path)

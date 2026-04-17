@@ -74,6 +74,7 @@ import uuid
 
 
 PRESENTATION_ROUTER = APIRouter(prefix="/presentation", tags=["Presentation"])
+logger = logging.getLogger(__name__)
 
 
 def _extract_custom_template_id(layout_name: Optional[str]) -> Optional[uuid.UUID]:
@@ -544,7 +545,7 @@ async def check_if_api_request_is_valid(
     sql_session: AsyncSession = Depends(get_async_session),
 ) -> Tuple[uuid.UUID,]:
     presentation_id = uuid.uuid4()
-    print(f"Presentation ID: {presentation_id}")
+    logger.info(f"Generated Presentation ID: {presentation_id}")
 
     # Making sure either content, slides markdown or files is provided
     if not (request.content or request.slides_markdown or request.files):
@@ -666,7 +667,7 @@ async def generate_presentation_handler(
                     dirtyjson.loads(presentation_outlines_text)
                 )
             except Exception:
-                traceback.print_exc()
+                logger.error(f"Failed to parse presentation outlines JSON: {traceback.format_exc()}")
                 raise HTTPException(
                     status_code=400,
                     detail="Failed to generate presentation outlines. Please try again.",
@@ -706,8 +707,7 @@ async def generate_presentation_handler(
             sql_session.add(async_status)
             await sql_session.commit()
 
-        print("-" * 40)
-        print(f"Generated {total_outlines} outlines for the presentation")
+        logger.info(f"Generated {total_outlines} outlines for the presentation")
 
         # Parse Layouts
         layout_model = await get_layout_by_name(request.template)
@@ -800,7 +800,7 @@ async def generate_presentation_handler(
         for start in range(0, len(slide_layouts), batch_size):
             end = min(start + batch_size, len(slide_layouts))
 
-            print(f"Generating slides from {start} to {end}")
+            logger.info(f"Generating slides from {start} to {end}")
 
             # Generate contents for this batch concurrently
             content_tasks = [
@@ -905,7 +905,7 @@ async def generate_presentation_handler(
 
     except Exception as e:
         if not isinstance(e, HTTPException):
-            traceback.print_exc()
+            logger.error(f"Presentation generation error: {traceback.format_exc()}")
             e = HTTPException(status_code=500, detail="Presentation generation failed")
 
         api_error_model = APIErrorModel.from_exception(e)
@@ -943,7 +943,7 @@ async def generate_presentation_sync(
     except HTTPException:
         raise
     except Exception:
-        traceback.print_exc()
+        logger.error(f"Presentation generation failed in generate_presentation_sync: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Presentation generation failed")
 
 
@@ -977,7 +977,7 @@ async def generate_presentation_async(
 
     except Exception as e:
         if not isinstance(e, HTTPException):
-            print(e)
+            logger.error(f"Presentation generation error in generate_presentation_async: {e}")
             e = HTTPException(status_code=500, detail="Presentation generation failed")
 
         raise e
