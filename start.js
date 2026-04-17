@@ -5,6 +5,8 @@ import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 
+const log = (msg) => console.log(`[${new Date().toISOString()}] [START.JS] ${msg}`);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -20,6 +22,9 @@ const fastapiPort = 8000;
 const nextjsPort = 3000;
 const appmcpPort = 8001;
 
+log(`Startup: Node ${process.version}, isDev=${isDev}, canChangeKeys=${canChangeKeys}, APP_DATA_DIRECTORY=${process.env.APP_DATA_DIRECTORY || 'unset'}, ports: FastAPI=${fastapiPort}, Next=${nextjsPort}, MCP=${appmcpPort}`);
+log(`Key env: LLM=${process.env.LLM || 'unset'}, IMAGE_PROVIDER=${process.env.IMAGE_PROVIDER || 'unset'}, LOG_LEVEL=${process.env.LOG_LEVEL || 'unset'}, VERIFY_SSL=${process.env.VERIFY_SSL || 'unset'}`);
+
 const userConfigPath = join(process.env.APP_DATA_DIRECTORY, "userConfig.json");
 const userDataDir = dirname(userConfigPath);
 
@@ -31,7 +36,7 @@ if (!existsSync(userDataDir)) {
 // Setup node_modules for development
 const setupNodeModules = () => {
   return new Promise((resolve, reject) => {
-    console.log("Setting up node_modules for Next.js...");
+    log("Setting up node_modules for Next.js...");
     const npmProcess = spawn("npm", ["install"], {
       cwd: nextjsDir,
       stdio: "inherit",
@@ -45,7 +50,7 @@ const setupNodeModules = () => {
 
     npmProcess.on("exit", (code) => {
       if (code === 0) {
-        console.log("npm install completed successfully");
+        log("npm install completed successfully");
         resolve();
       } else {
         console.error(`npm install failed with exit code: ${code}`);
@@ -111,12 +116,14 @@ const setupUserConfigFromEnv = () => {
   };
 
   writeFileSync(userConfigPath, JSON.stringify(userConfig));
+  log(`User config updated at ${userConfigPath}. LLM: ${userConfig.LLM || 'not set'}, IMAGE_PROVIDER: ${userConfig.IMAGE_PROVIDER || 'not set'}`);
 };
 
 let nginxProcess;
 
 // Start servers
 const startServers = async () => {
+  log(`Starting FastAPI on port ${fastapiPort}`);
   const fastApiProcess = spawn(
     "python",
     [
@@ -132,11 +139,13 @@ const startServers = async () => {
       env: process.env,
     }
   );
+  log(`FastAPI PID: ${fastApiProcess.pid}`);
 
   fastApiProcess.on("error", (err) => {
     console.error("FastAPI process failed to start:", err);
   });
 
+  log(`Starting AppMCP on port ${appmcpPort}`);
   const appmcpProcess = spawn(
     "python",
     ["mcp_server.py", "--port", appmcpPort.toString()],
@@ -146,11 +155,13 @@ const startServers = async () => {
       env: process.env,
     }
   );
+  log(`AppMCP PID: ${appmcpProcess.pid}`);
 
   appmcpProcess.on("error", (err) => {
     console.error("App MCP process failed to start:", err);
   });
 
+  log(`Starting Next.js on port ${nextjsPort}`);
   const nextjsProcess = spawn(
     "npm",
     [
@@ -168,16 +179,19 @@ const startServers = async () => {
       env: process.env,
     }
   );
+  log(`Next.js PID: ${nextjsProcess.pid}`);
 
   nextjsProcess.on("error", (err) => {
     console.error("Next.js process failed to start:", err);
   });
 
+  log(`Starting Ollama`);
   const ollamaProcess = spawn("ollama", ["serve"], {
     cwd: "/",
     stdio: "inherit",
     env: process.env,
   });
+  log(`Ollama PID: ${ollamaProcess.pid}`);
 
   ollamaProcess.on("error", (err) => {
     console.error("Ollama process failed to start:", err);
@@ -204,16 +218,18 @@ const startServers = async () => {
     ),
   ]);
 
-  console.log(`One of the processes exited. Exit code: ${exitCode}`);
+  log(`One of the processes exited. Exit code: ${exitCode}`);
   process.exit(exitCode);
 };
 
 // Start nginx process
 const startNginx = () => {
+  log(`Starting Nginx on port 8080`);
   const nginxProc = spawn("nginx", ["-g", "daemon off;"], {
     stdio: "inherit",
     env: process.env,
   });
+  log(`Nginx PID: ${nginxProc.pid}`);
 
   nginxProc.on("error", (err) => {
     console.error("Nginx process failed to start:", err);
@@ -241,6 +257,7 @@ const main = async () => {
 
   startServers();
   nginxProcess = startNginx();
+  log("All services initiated successfully. Check logs for PIDs and any errors.");
 };
 
 main();

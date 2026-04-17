@@ -1,5 +1,16 @@
 # Project Changes
 
+### 2026-04-17 - Lazy IconFinderService Initialization
+
+Fixed potential FastAPI startup failures caused by eager ChromaDB initialization during module imports (e.g., missing embedding model or network timeouts).
+
+#### Key Changes
+- **servers/fastapi/services/icon_finder_service.py**:
+  - Removed icons collection initialization from `__init__`.
+  - Added lazy initialization check in `search_icons()` method: initializes only on first icon search.
+  - Ensures server starts reliably even if ChromaDB model unavailable at boot.
+- Electron backend already used lazy initialization with fastembed.
+
 ### 2026-04-17 - Removed Mixpanel Tracking
 
 Removed all Mixpanel analytics and telemetry tracking for enhanced privacy compliance.
@@ -248,3 +259,41 @@ Added support for rootless container execution and Red Hat OpenShift, ensuring c
 - `k8s/deployment.yaml`
 - `.github/workflows/docker-build-push.yml`
 - `.github/workflows/README.md`
+
+### 2026-04-17 - Enhanced Startup Logging
+
+Added prominent confirmation log to FastAPI lifespan to clearly indicate successful initialization in container/pod logs.
+
+#### Key Changes
+- **servers/fastapi/api/lifespan.py**:
+  - Added `logger.info("=== FASTAPI STARTUP SUCCESSFUL - Server ready to accept requests on 127.0.0.1:8000 ===")` after lifespan checks complete.
+  - Complements existing step-by-step logs (directory setup, DB migrations, LLM checks) for full startup traceability.
+### 2026-04-17 - Startup Error Logging
+
+Added structured error logging for all startup failure points to provide full tracebacks and context in container logs.
+
+#### Key Changes
+- **servers/fastapi/api/lifespan.py** and **electron/servers/fastapi/api/lifespan.py**:
+  - Wrapped migrations, DB tables, and LLM checks in `try-except` with `logger.error("Failed [step]", exc_info=True)` before re-raising.
+  - Ensures clear failure identification + full stack trace.
+- Electron backend now has matching logging structure including success confirmation.
+
+#### Verification
+- Produces "Failed checking LLM..." + traceback for missing keys/models, etc.
+
+### 2026-04-17 - Extensive Logging in start.js
+
+Added comprehensive timestamped logging to the main container startup script (`start.js`) for improved observability in Kubernetes/Docker environments.
+
+#### Key Changes
+- **start.js**:
+  - `log(msg)` helper: `console.log(`[${new Date().toISOString()}] [START.JS] ${msg}`)`.
+  - Startup: Node version, isDev, canChangeKeys, APP_DATA_DIRECTORY, ports, key env (LLM, IMAGE_PROVIDER, VERIFY_SSL).
+  - User config: path, LLM/IMAGE_PROVIDER after write.
+  - Services: "Starting <Service> [port]", PID after spawn for FastAPI(8000), AppMCP(8001), Next.js(3000), Ollama, Nginx(8080).
+  - Init complete summary, updated exit log.
+  - Unified npm/dev logs.
+
+#### Verification
+- Syntax lint clean.
+- Structured for log aggregation (PID grep, timestamps).

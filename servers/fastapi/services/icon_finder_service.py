@@ -19,9 +19,6 @@ class IconFinderService:
         self.client = chromadb.PersistentClient(
             path=chroma_db_dir, settings=Settings(anonymized_telemetry=False)
         )
-        logger.info("Initializing icons collection...")
-        self._initialize_icons_collection()
-        logger.info("Icons collection initialized.")
 
     def _initialize_icons_collection(self):
         self.embedding_function = ONNXMiniLM_L6_V2()
@@ -54,6 +51,10 @@ class IconFinderService:
                 self.collection.add(documents=documents, ids=ids)
 
     async def search_icons(self, query: str, k: int = 1):
+        if not hasattr(self, "collection") or self.collection is None:
+            logger.info("Initializing icons collection...")
+            self._initialize_icons_collection()
+            logger.info("Icons collection initialized.")
         logger.debug(f"Searching icons for query: {query}")
         result = await asyncio.to_thread(
             self.collection.query,

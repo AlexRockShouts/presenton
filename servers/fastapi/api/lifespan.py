@@ -28,15 +28,28 @@ async def app_lifespan(_: FastAPI):
     os.makedirs(app_data_dir, exist_ok=True)
     
     logger.info("Running database migrations...")
-    await migrate_database_on_startup()
+    try:
+        await migrate_database_on_startup()
+    except Exception as exc:
+        logger.error("Failed running database migrations", exc_info=True)
+        raise
     
     logger.info("Creating database tables...")
-    await create_db_and_tables()
+    try:
+        await create_db_and_tables()
+    except Exception as exc:
+        logger.error("Failed creating database tables", exc_info=True)
+        raise
     
     logger.info("Checking LLM and Image Provider availability...")
-    await check_llm_and_image_provider_api_or_model_availability()
+    try:
+        await check_llm_and_image_provider_api_or_model_availability()
+    except Exception as exc:
+        logger.error("Failed checking LLM and Image Provider availability", exc_info=True)
+        raise
     
     logger.info("Lifespan initialization complete.")
+    logger.info("=== FASTAPI STARTUP SUCCESSFUL - Server ready to accept requests on 127.0.0.1:8000 ===")
     yield
     # Shutdown: release all database connections to prevent stale/leaked pools.
     logger.info("Shutting down FastAPI application lifespan...")
