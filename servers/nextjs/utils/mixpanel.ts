@@ -6,3 +6,7 @@ export const trackEvent = (event: string, properties?: Record<string, any>): voi
 };
 
 export const MixpanelEvent = {} as Record<string, string>;
+
+export const setTelemetryEnabled = (enabled: boolean): void => {
+  // No operation: Mixpanel removed
+};
