@@ -33,6 +33,13 @@ elif '/usr/share/chroma_models' in content:
 else:
     print("DOWNLOAD_PATH pattern not found!")
 
+# 3. Suppress ONNX providers warning by explicitly using CPU provider
+if 'providers=None,' in content:
+    content = content.replace('providers=None,', "providers=['CPUExecutionProvider'],")
+    print("ONNX providers fix applied.")
+else:
+    print("ONNX providers fix already present or not found.")
+
 with open(file_path, "w") as f:
     f.write(content)
 
