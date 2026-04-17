@@ -163,7 +163,7 @@ class LLMClient:
         verify = parse_bool_or_none(get_verify_ssl_env())
         if verify is None:
             verify = get_verify_ssl_env() or True
-        return httpx.AsyncClient(verify=verify, timeout=httpx.Timeout(connect=90.0, read=90.0))
+        return httpx.AsyncClient(verify=verify, timeout=httpx.Timeout(connect=90.0, read=90.0, write=90.0, pool=90.0))
 
     # ? Clients
     def _get_client(self):

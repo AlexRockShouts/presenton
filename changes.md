@@ -324,3 +324,16 @@ Added comprehensive timestamped logging to the main container startup script (`s
 #### Verification
 - Syntax lint clean.
 - Structured for log aggregation (PID grep, timestamps).
+### 2026-04-18 - Fixed httpx.Timeout ValueError in LLM/OpenAI Clients
+
+Fixed `ValueError: httpx.Timeout must either include a default, or set all four parameters explicitly.` crash during LLMClient initialization.
+
+#### Key Changes
+- **services/llm_client.py**, **utils/available_models.py** (main/electron): 
+  - Updated `httpx.Timeout(connect=90.0, read=90.0)` → `httpx.Timeout(connect=90.0, read=90.0, write=90.0, pool=90.0)`.
+
+#### Verification
+- Direct code inspection: All 4 affected files updated consistently.
+- Linting clean (unresolved deps expected without venv).
+- Matches `patch_chromadb.py` pattern; prevents crash on custom LLM requests (e.g., generate_ppt_outline).
+
