@@ -43,13 +43,13 @@ RUN pip install --no-cache-dir \
     && pip install --no-cache-dir docling --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Pre-download the ONNXMiniLM_L6_V2 model for chromadb
+COPY scripts/download_model.py ./scripts/
 RUN python3 scripts/download_model.py
 
 # Copy Next.js app from builder
 COPY --from=next-builder /app/servers/nextjs /app/servers/nextjs
 
 # Copy FastAPI and other files
-COPY scripts/download_model.py ./scripts/
 COPY servers/fastapi/ ./servers/fastapi/
 COPY start.js LICENSE NOTICE ./
 COPY nginx.conf /etc/nginx/nginx.conf

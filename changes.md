@@ -1,5 +1,14 @@
 # Project Changes
 
+### 2026-04-17 - Robust Model Pre-downloading (Fix)
+
+Fixed a bug in the `Dockerfile` where the `download_model.py` script was being executed before it was copied into the image.
+
+### Key Changes
+
+- **Dockerfile**
+  - Moved the `COPY scripts/download_model.py ./scripts/` command before the `RUN python3 scripts/download_model.py` command.
+
 ### 2026-04-17 - Robust Model Pre-downloading
 
 Improved the reliability of the embedding model pre-downloading process in the Docker image by using a dedicated Python script with retry logic and exponential backoff.
