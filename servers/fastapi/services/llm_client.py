@@ -41,7 +41,7 @@ from models.llm_tool_call import (
 )
 from models.llm_tools import LLMDynamicTool, LLMTool
 import httpx
-from anyio import CancelledError
+from asyncio import CancelledError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from services.llm_tool_calls_handler import LLMToolCallsHandler
 from utils.async_iterator import iterator_to_async
@@ -1104,7 +1104,7 @@ class LLMClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
-        retry=retry_if_exception_type((httpx.ConnectError, httpx.TimeoutException, anyio.CancelledError)),
+        retry=retry_if_exception_type((httpx.ConnectError, httpx.TimeoutException, CancelledError)),
         reraise=True
     )
     async def generate_structured(
