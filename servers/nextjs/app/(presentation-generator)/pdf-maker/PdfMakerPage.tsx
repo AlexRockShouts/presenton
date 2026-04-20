@@ -167,7 +167,7 @@ const PresentationPage = ({ presentation_id, exportMode, exportTitle }: PdfMaker
   };
 
   const exportAsPptx = async (canvases: HTMLCanvasElement[], title: string) => {
-    const PptxGenJS = (await import("pptxgenjs")).default;
+    const PptxGenJS = (await import(/* webpackIgnore: true */ "pptxgenjs")).default;
     const pptx = new PptxGenJS();
     pptx.layout = "LAYOUT_16x9";
 

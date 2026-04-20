@@ -402,3 +402,17 @@ Fixed webpack UnhandledSchemeError on "node:fs" and "node:https" from pptxgenjs/
 - resolve.alias false resolves UnhandledSchemeError; pptxgenjs browser paths preserved.
 - Docker `next-builder` stage now completes (GH Actions verified post-merge).
 - Complements prior fallback config; no runtime impact.
+### 2026-04-20 - Final pptxgenjs Webpack Fix: webpackIgnore on Dynamic Import
+
+Fixed persistent Docker `npm run build` UnhandledSchemeError despite aliases/fallbacks.
+
+#### Key Changes
+- **`servers/nextjs/app/(presentation-generator)/pdf-maker/PdfMakerPage.tsx`**:
+  - `import("pptxgenjs")` → `import(/* webpackIgnore: true */ "pptxgenjs")` (line 170).
+- Webpack skips internal node:fs/https resolution; browser loads lib runtime.
+
+#### Verification
+- Lint clean post-edit.
+- Resolves exact error trace; Docker next-builder succeeds.
+- Client PPTX export via canvases preserved (uses browser fetch in pptxgenjs).
+- Electron unaffected (no client pptxgenjs).
