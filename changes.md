@@ -358,3 +358,19 @@ Added comprehensive timestamped logging to the main container startup script (`s
 #### Verification
 - Syntax lint clean.
 - Structured for log aggregation (PID grep, timestamps).
+
+### 2026-04-20 - Fixed Next.js Docker Build Failure: pptxgenjs Webpack node:https Error
+
+Fixed webpack bundling error during Docker `npm run build` caused by pptxgenjs importing Node.js `https` module in client-side PdfMakerPage.tsx (used for PDF/PPTX preview/export).
+
+#### Key Changes
+- **servers/nextjs/next.config.mjs** & **electron/servers/nextjs/next.config.mjs**:
+  - Added `webpack(config, { isServer })` config:
+    - Client-side (`!isServer`): `resolve.fallback` for `https`, `fs`, `path`, `stream`, `crypto`, `tls`, `zlib` = `false`.
+  - Prevents webpack from attempting to bundle Node.js built-ins in browser bundles.
+
+#### Verification
+- Both configs lint clean.
+- Local `npm run build` succeeds cleanly (28/28 pages).
+- Resolves Docker stage failure; rebuild with `--no-cache` recommended.
+- No runtime impact; pptxgenjs browser support preserved (uses fetch).

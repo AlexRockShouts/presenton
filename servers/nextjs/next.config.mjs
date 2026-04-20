@@ -54,7 +54,21 @@ const nextConfig = {
       },
     ],
   },
-  
+
+  webpack(config, { isServer }) {
+    if (!isServer) {
+      config.resolve.fallback ??= {};
+      config.resolve.fallback.https = false;
+      config.resolve.fallback.fs = false;
+      config.resolve.fallback.path = false;
+      config.resolve.fallback.stream = false;
+      config.resolve.fallback.crypto = false;
+      config.resolve.fallback.tls = false;
+      config.resolve.fallback.zlib = false;
+    }
+    return config;
+  },
+
 };
 
 export default nextConfig;
