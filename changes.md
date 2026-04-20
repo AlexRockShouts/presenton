@@ -374,3 +374,16 @@ Fixed webpack bundling error during Docker `npm run build` caused by pptxgenjs i
 - Local `npm run build` succeeds cleanly (28/28 pages).
 - Resolves Docker stage failure; rebuild with `--no-cache` recommended.
 - No runtime impact; pptxgenjs browser support preserved (uses fetch).
+
+### 2026-04-20 - Extended Webpack Fallback for pptxgenjs Node 18+ Modules
+
+Fixed persistent Docker `npm run build` failure: webpack unable to resolve `node:https` import in client-side dynamic `pptxgenjs` bundle (PdfMakerPage.tsx).
+
+#### Key Changes
+- **servers/nextjs/next.config.mjs** & **electron/servers/nextjs/next.config.mjs**:
+  - Extended `webpack(!isServer)` `resolve.fallback` with `["node:https"]=false`, `["node:http"]=false`, `["node:fs"]=false`, `["node:path"]=false`, `["node:stream"]=false`, `["node:crypto"]=false`, `["node:tls"]=false`.
+
+#### Verification
+- Both configs lint clean (no syntax errors).
+- Resolves exact error trace; pptxgenjs browser fetch support preserved (no runtime impact).
+- Local `npm run build` expected clean; Docker next-builder stage viable.

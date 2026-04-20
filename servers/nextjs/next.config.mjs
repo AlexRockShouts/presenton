@@ -65,6 +65,13 @@ const nextConfig = {
       config.resolve.fallback.crypto = false;
       config.resolve.fallback.tls = false;
       config.resolve.fallback.zlib = false;
+      config.resolve.fallback["node:https"] = false;
+      config.resolve.fallback["node:http"] = false;
+      config.resolve.fallback["node:fs"] = false;
+      config.resolve.fallback["node:path"] = false;
+      config.resolve.fallback["node:stream"] = false;
+      config.resolve.fallback["node:crypto"] = false;
+      config.resolve.fallback["node:tls"] = false;
     }
     return config;
   },
