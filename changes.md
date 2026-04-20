@@ -344,3 +344,17 @@ Fixed `ValueError: httpx.Timeout must either include a default, or set all four 
 - Retries up to 3 attempts on `httpx.ConnectError`, `httpx.TimeoutException`, `anyio.CancelledError` (e.g., slow connects to `api.x.ai`).
 - Exponential backoff (multiplier=1, min=1s, max=10s); `reraise=True` on final failure.
 - Prevents ASGI crashes during streaming endpoints like outlines; leverages existing manual None-handling loop.\n\n### 2026-04-20 - Fixed PPTX Export Race Condition\n\nFixed 422 \"Presentation slides not found\" on /export/pptx immediately after successful PATCH /update: frontend now polls GET /presentation/{id} until slides populated.\n\n#### Key Changes\n- **servers/nextjs/app/(presentation-generator)/services/api/presentation-generation.ts** & **electron/servers/nextjs/...**:\n  - Added `static async pollSlidesReady(id: string, timeoutMs=300000)`: Polls every 2s until `presentation.slides.length > 0` or 5min timeout.\n  - Modified `exportAsPPTX(presentationData)`: Validates `id`, awaits poll before POST export.\n\n#### Verification\n- Both files lint clean.\n- Silent handling of poll errors/!ok; descriptive timeout error.\n- Backend validation unchanged (safety net).
+
+
+### 2026-04-20 - Next.js PDF Maker and UI Component Updates
+
+Updated PDF preview/maker components and presentation header for improved user experience; refreshed dependencies.
+
+#### Key Changes
+- **servers/nextjs/app/(presentation-generator)/pdf-maker/PdfMakerPage.tsx** & **pdf-maker/page.tsx**: Enhanced PDF maker page functionality (preview, export handling).
+- **servers/nextjs/app/(presentation-generator)/presentation/components/PresentationHeader.tsx**: Updated presentation header component.
+- **servers/nextjs/package.json** & **package-lock.json**: Dependency updates and lockfile regeneration.
+
+#### Verification
+- Modified files lint and type-check clean.
+- Next.js build succeeds (tsconfig.tsbuildinfo updated).

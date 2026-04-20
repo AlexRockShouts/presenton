@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,22 +7,25 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { setPresentationData } from "@/store/slices/presentationGeneration";
 import { DashboardApi } from "../services/api/dashboard";
-
-
 import { V1ContentRender } from "../components/V1ContentRender";
 import { useFontLoader } from "../hooks/useFontLoad";
 import { Theme } from "../services/api/types";
+import { sanitizeFilename } from "@/app/(presentation-generator)/utils/others";
 
+interface PdfMakerPageProps {
+  presentation_id: string;
+  exportMode?: "pdf" | "pptx" | null;
+  exportTitle?: string;
+}
 
-
-
-
-const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
+const PresentationPage = ({ presentation_id, exportMode, exportTitle }: PdfMakerPageProps) => {
   const pathname = usePathname();
   const [contentLoading, setContentLoading] = useState(true);
+  const [exportStatus, setExportStatus] = useState<"idle" | "capturing" | "done" | "error">("idle");
+  const exportStarted = useRef(false);
 
   const dispatch = useDispatch();
   const { presentationData } = useSelector(
@@ -43,12 +46,11 @@ const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
       }
     }
   }, [presentationData]);
-  // Function to fetch the slides
+
   useEffect(() => {
     fetchUserSlides();
   }, []);
 
-  // Function to fetch the user slides
   const fetchUserSlides = async () => {
     try {
       const data = await DashboardApi.getPresentation(presentation_id);
@@ -94,15 +96,123 @@ const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
     })
     useFontLoader({ [theme.data.fonts.textFont.name]: theme.data.fonts.textFont.url })
 
-    // Apply fonts to preview container
     element.style.setProperty('font-family', `"${theme.data.fonts.textFont.name}"`)
     element.style.setProperty('--heading-font-family', `"${theme.data.fonts.textFont.name}"`)
     element.style.setProperty('--body-font-family', `"${theme.data.fonts.textFont.name}"`)
-    // Update the Presentation content with theme
   }
 
+  // Trigger export after slides render
+  useEffect(() => {
+    if (!exportMode || contentLoading || !presentationData?.slides?.length || exportStarted.current) return;
+    exportStarted.current = true;
 
-  // Regular view
+    // Wait for fonts and images to fully render before capturing
+    const delay = presentationData.slides.length > 5 ? 3000 : 2000;
+    const timer = setTimeout(() => runExport(), delay);
+    return () => clearTimeout(timer);
+  }, [exportMode, contentLoading, presentationData]);
+
+  const runExport = async () => {
+    setExportStatus("capturing");
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const slideWrappers = document.querySelectorAll<HTMLElement>('[data-slide-export]');
+
+      if (slideWrappers.length === 0) {
+        throw new Error("No slides found for export");
+      }
+
+      const canvases: HTMLCanvasElement[] = [];
+      for (const wrapper of slideWrappers) {
+        const slideEl = wrapper.querySelector<HTMLElement>('.aspect-video') ?? wrapper;
+        const canvas = await html2canvas(slideEl, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+        });
+        canvases.push(canvas);
+      }
+
+      const title = sanitizeFilename(exportTitle || "presentation");
+
+      if (exportMode === "pdf") {
+        await exportAsPdf(canvases, title);
+      } else {
+        await exportAsPptx(canvases, title);
+      }
+
+      setExportStatus("done");
+      setTimeout(() => window.close(), 1500);
+    } catch (err) {
+      console.error("Export failed:", err);
+      setExportStatus("error");
+    }
+  };
+
+  const exportAsPdf = async (canvases: HTMLCanvasElement[], title: string) => {
+    const { jsPDF } = await import("jspdf");
+    const firstCanvas = canvases[0];
+    const w = firstCanvas.width / 2; // account for scale:2
+    const h = firstCanvas.height / 2;
+    const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [w, h] });
+
+    canvases.forEach((canvas, i) => {
+      if (i > 0) pdf.addPage([w, h], "landscape");
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, w, h);
+    });
+
+    pdf.save(`${title}.pdf`);
+  };
+
+  const exportAsPptx = async (canvases: HTMLCanvasElement[], title: string) => {
+    const PptxGenJS = (await import("pptxgenjs")).default;
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_16x9";
+
+    for (const canvas of canvases) {
+      const slide = pptx.addSlide();
+      slide.addImage({ data: canvas.toDataURL("image/jpeg", 0.95), x: 0, y: 0, w: "100%", h: "100%" });
+    }
+
+    await pptx.writeFile({ fileName: `${title}.pptx` });
+  };
+
+  if (exportMode) {
+    return (
+      <div className="relative">
+        {(exportStatus === "capturing" || exportStatus === "idle") && (
+          <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-[#5141e5]" />
+            <p className="text-sm font-medium text-gray-700">
+              {exportStatus === "capturing" ? `Generating ${exportMode?.toUpperCase()}…` : "Loading slides…"}
+            </p>
+          </div>
+        )}
+        {exportStatus === "done" && (
+          <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center gap-3">
+            <p className="text-lg font-semibold text-green-600">Download started!</p>
+            <p className="text-sm text-gray-500">This tab will close automatically.</p>
+          </div>
+        )}
+        {exportStatus === "error" && (
+          <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center gap-4">
+            <AlertCircle className="w-10 h-10 text-red-500" />
+            <p className="text-base font-semibold text-red-600">Export failed</p>
+            <Button variant="outline" onClick={() => { exportStarted.current = false; runExport(); }}>Retry</Button>
+          </div>
+        )}
+        <SlidesRenderer
+          presentationData={presentationData}
+          contentLoading={contentLoading}
+          exportMode={exportMode}
+        />
+      </div>
+    );
+  }
+
+  // Regular (non-export) view
   return (
     <div className="flex overflow-hidden flex-col">
       {error ? (
@@ -137,7 +247,6 @@ const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
             className="mx-auto flex flex-col items-center  overflow-hidden  justify-center   "
           >
             {!presentationData ||
-
               contentLoading ||
               !presentationData?.slides ||
               presentationData?.slides.length === 0 ? (
@@ -157,7 +266,6 @@ const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
                   presentationData.slides &&
                   presentationData.slides.length > 0 &&
                   presentationData.slides.map((slide: any, index: number) => (
-                    // [data-speaker-note] is used to extract the speaker note from the slide for export to pptx
                     <div key={index} className="w-full" data-speaker-note={slide.speaker_note}>
                       <V1ContentRender slide={slide} isEditMode={true} theme={null}
                       />
@@ -168,6 +276,42 @@ const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// Separate component to render slides for capture
+const SlidesRenderer = ({
+  presentationData,
+  contentLoading,
+  exportMode,
+}: {
+  presentationData: any;
+  contentLoading: boolean;
+  exportMode: "pdf" | "pptx";
+}) => {
+  if (contentLoading || !presentationData?.slides?.length) {
+    return (
+      <div className="w-full p-8">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Skeleton key={i} className="aspect-video bg-gray-200 my-4 w-full max-w-[1280px] mx-auto" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div id="presentation-slides-wrapper" className="flex flex-col items-center">
+      {presentationData.slides.map((slide: any, index: number) => (
+        <div
+          key={index}
+          data-slide-export={index}
+          data-speaker-note={slide.speaker_note}
+          className="w-full max-w-[1280px] my-2"
+        >
+          <V1ContentRender slide={slide} isEditMode={false} theme={null} />
+        </div>
+      ))}
     </div>
   );
 };

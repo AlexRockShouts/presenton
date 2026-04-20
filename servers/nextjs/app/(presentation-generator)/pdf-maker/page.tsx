@@ -9,6 +9,9 @@ const page = () => {
     const router = useRouter();
     const params = useSearchParams();
     const queryId = params.get("id");
+    const exportMode = params.get("export") as "pdf" | "pptx" | null;
+    const exportTitle = params.get("title") || "presentation";
+
     if (!queryId) {
         return (
             <div className="flex flex-col items-center justify-center h-screen">
@@ -19,7 +22,7 @@ const page = () => {
         );
     }
     return (
-        <PdfMakerPage presentation_id={queryId} />
+        <PdfMakerPage presentation_id={queryId} exportMode={exportMode} exportTitle={exportTitle} />
     );
 };
 export default page;
