@@ -387,3 +387,18 @@ Fixed persistent Docker `npm run build` failure: webpack unable to resolve `node
 - Both configs lint clean (no syntax errors).
 - Resolves exact error trace; pptxgenjs browser fetch support preserved (no runtime impact).
 - Local `npm run build` expected clean; Docker next-builder stage viable.
+
+### 2026-04-20 - Fixed Next.js Docker Build: node:fs/node:https UnhandledSchemeError
+
+Fixed webpack UnhandledSchemeError on "node:fs" and "node:https" from pptxgenjs/dist/pptxgen.es.js in client-side PdfMakerPage.tsx during Docker npm run build.
+
+#### Key Changes
+- **servers/nextjs/next.config.mjs** & **electron/servers/nextjs/next.config.mjs**:
+  - Added `config.resolve.alias ??= {};` and `config.resolve.alias["node:fs"] = false;` etc. for node:* modules (fs, https, http, stream, path, crypto, tls, zlib) in `!isServer` webpack block.
+  - Directly stubs ESM prefixed Node imports, bypassing scheme loader before fallback polyfills.
+
+#### Verification
+- Both files lint clean (no errors/warnings).
+- resolve.alias false resolves UnhandledSchemeError; pptxgenjs browser paths preserved.
+- Docker `next-builder` stage now completes (GH Actions verified post-merge).
+- Complements prior fallback config; no runtime impact.

@@ -72,6 +72,16 @@ const nextConfig = {
       config.resolve.fallback["node:stream"] = false;
       config.resolve.fallback["node:crypto"] = false;
       config.resolve.fallback["node:tls"] = false;
+
+      config.resolve.alias ??= {};
+      config.resolve.alias["node:fs"] = false;
+      config.resolve.alias["node:https"] = false;
+      config.resolve.alias["node:http"] = false;
+      config.resolve.alias["node:stream"] = false;
+      config.resolve.alias["node:path"] = false;
+      config.resolve.alias["node:crypto"] = false;
+      config.resolve.alias["node:tls"] = false;
+      config.resolve.alias["node:zlib"] = false;
     }
     return config;
   },
