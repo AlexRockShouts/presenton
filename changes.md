@@ -1,3 +1,37 @@
+### 2026-04-20 - Next.js PDF Maker and UI Component Updates
+
+Updated PDF preview/maker components and presentation header for improved user experience; refreshed dependencies.
+
+#### Key Changes
+- **servers/nextjs/app/(presentation-generator)/pdf-maker/PdfMakerPage.tsx** & **pdf-maker/page.tsx**: Enhanced PDF maker page functionality (preview, export handling).
+- **servers/nextjs/app/(presentation-generator)/presentation/components/PresentationHeader.tsx**: Updated presentation header component.
+- **servers/nextjs/package.json** & **package-lock.json**: Dependency updates and lockfile regeneration.
+
+#### Verification
+- Modified files lint and type-check clean.
+- Next.js build succeeds (tsconfig.tsbuildinfo updated).
+
+### 2026-04-18 - Fixed httpx.Timeout ValueError in LLM/OpenAI Clients
+
+Fixed `ValueError: httpx.Timeout must either include a default, or set all four parameters explicitly.` crash during LLMClient initialization.
+
+#### Key Changes
+- **services/llm_client.py**, **utils/available_models.py** (main/electron):
+  - Updated `httpx.Timeout(connect=90.0, read=90.0)` → `httpx.Timeout(connect=90.0, read=90.0, write=90.0, pool=90.0)`.
+
+#### Verification
+- Direct code inspection: All 4 affected files updated consistently.
+- Linting clean (unresolved deps expected without venv).
+- Matches `patch_chromadb.py` pattern; prevents crash on custom LLM requests (e.g., generate_ppt_outline).
+
+
+### LLM Client Resilience to Cancellations
+
+- Added `@retry` decorator from `tenacity` to `generate_structured()` in both main (`servers/fastapi/services/llm_client.py`) and Electron (`electron/servers/fastapi/services/llm_client.py`).
+- Retries up to 3 attempts on `httpx.ConnectError`, `httpx.TimeoutException`, `anyio.CancelledError` (e.g., slow connects to `api.x.ai`).
+- Exponential backoff (multiplier=1, min=1s, max=10s); `reraise=True` on final failure.
+- Prevents ASGI crashes during streaming endpoints like outlines; leverages existing manual None-handling loop.\n\n### 2026-04-20 - Fixed PPTX Export Race Condition\n\nFixed 422 \"Presentation slides not found\" on /export/pptx immediately after successful PATCH /update: frontend now polls GET /presentation/{id} until slides populated.\n\n#### Key Changes\n- **servers/nextjs/app/(presentation-generator)/services/api/presentation-generation.ts** & **electron/servers/nextjs/...**:\n  - Added `static async pollSlidesReady(id: string, timeoutMs=300000)`: Polls every 2s until `presentation.slides.length > 0` or 5min timeout.\n  - Modified `exportAsPPTX(presentationData)`: Validates `id`, awaits poll before POST export.\n\n#### Verification\n- Both files lint clean.\n- Silent handling of poll errors/!ok; descriptive timeout error.\n- Backend validation unchanged (safety net).
+
 ### 2026-04-18 - Increased All HTTP Timeouts to 90 Seconds
 
 Increased all HTTP client timeouts (httpx, aiohttp, uvicorn) to 90 seconds to handle slower networks/connections reliably.
@@ -324,37 +358,3 @@ Added comprehensive timestamped logging to the main container startup script (`s
 #### Verification
 - Syntax lint clean.
 - Structured for log aggregation (PID grep, timestamps).
-### 2026-04-18 - Fixed httpx.Timeout ValueError in LLM/OpenAI Clients
-
-Fixed `ValueError: httpx.Timeout must either include a default, or set all four parameters explicitly.` crash during LLMClient initialization.
-
-#### Key Changes
-- **services/llm_client.py**, **utils/available_models.py** (main/electron): 
-  - Updated `httpx.Timeout(connect=90.0, read=90.0)` → `httpx.Timeout(connect=90.0, read=90.0, write=90.0, pool=90.0)`.
-
-#### Verification
-- Direct code inspection: All 4 affected files updated consistently.
-- Linting clean (unresolved deps expected without venv).
-- Matches `patch_chromadb.py` pattern; prevents crash on custom LLM requests (e.g., generate_ppt_outline).
-
-
-### LLM Client Resilience to Cancellations
-
-- Added `@retry` decorator from `tenacity` to `generate_structured()` in both main (`servers/fastapi/services/llm_client.py`) and Electron (`electron/servers/fastapi/services/llm_client.py`).
-- Retries up to 3 attempts on `httpx.ConnectError`, `httpx.TimeoutException`, `anyio.CancelledError` (e.g., slow connects to `api.x.ai`).
-- Exponential backoff (multiplier=1, min=1s, max=10s); `reraise=True` on final failure.
-- Prevents ASGI crashes during streaming endpoints like outlines; leverages existing manual None-handling loop.\n\n### 2026-04-20 - Fixed PPTX Export Race Condition\n\nFixed 422 \"Presentation slides not found\" on /export/pptx immediately after successful PATCH /update: frontend now polls GET /presentation/{id} until slides populated.\n\n#### Key Changes\n- **servers/nextjs/app/(presentation-generator)/services/api/presentation-generation.ts** & **electron/servers/nextjs/...**:\n  - Added `static async pollSlidesReady(id: string, timeoutMs=300000)`: Polls every 2s until `presentation.slides.length > 0` or 5min timeout.\n  - Modified `exportAsPPTX(presentationData)`: Validates `id`, awaits poll before POST export.\n\n#### Verification\n- Both files lint clean.\n- Silent handling of poll errors/!ok; descriptive timeout error.\n- Backend validation unchanged (safety net).
-
-
-### 2026-04-20 - Next.js PDF Maker and UI Component Updates
-
-Updated PDF preview/maker components and presentation header for improved user experience; refreshed dependencies.
-
-#### Key Changes
-- **servers/nextjs/app/(presentation-generator)/pdf-maker/PdfMakerPage.tsx** & **pdf-maker/page.tsx**: Enhanced PDF maker page functionality (preview, export handling).
-- **servers/nextjs/app/(presentation-generator)/presentation/components/PresentationHeader.tsx**: Updated presentation header component.
-- **servers/nextjs/package.json** & **package-lock.json**: Dependency updates and lockfile regeneration.
-
-#### Verification
-- Modified files lint and type-check clean.
-- Next.js build succeeds (tsconfig.tsbuildinfo updated).
