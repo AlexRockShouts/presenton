@@ -226,11 +226,42 @@ export class PresentationGenerationApi {
     }
   }
 
+  static async pollSlidesReady(id: string, timeoutMs: number = 300000): Promise<any> {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const response = await fetch(getApiUrl(`/api/v1/ppt/presentation/${id}`), {
+          method: 'GET',
+          headers: getHeader(),
+          cache: 'no-cache',
+        });
 
+        if (!response.ok) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+
+        const data = await response.json();
+
+        if (data.slides && Array.isArray(data.slides) && data.slides.length > 0) {
+          return data;
+        }
+      } catch (error) {
+        // silent fail
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    throw new Error(`Slides not ready for presentation ${id} after ${timeoutMs / 1000}s`);
+  }
 
   // EXPORT PRESENTATION
   static async exportAsPPTX(presentationData: any) {
     try {
+      if (!presentationData.id) {
+        throw new Error('Presentation ID required for export');
+      }
+      await PresentationGenerationApi.pollSlidesReady(presentationData.id);
       const response = await fetch(
         getApiUrl(`/api/v1/ppt/presentation/export/pptx`),
         {
